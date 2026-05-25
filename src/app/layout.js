@@ -6,12 +6,12 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const buildId = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
 
 export const metadata = {
-  title: '멀티 평가 노트',
+  title: '강덕부',
   description: '좋아하는 모든 것을 기록하고 평가하는 노트',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: '평가노트',
+    title: '강덕부',
   },
 };
 
@@ -26,9 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
-        <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} />
-        <link rel="icon" type="image/png" sizes="192x192" href={`${basePath}/icon-192.png`} />
-        <link rel="icon" type="image/png" sizes="512x512" href={`${basePath}/icon-512.png`} />
+        <link rel="apple-touch-icon" href={`${basePath}/icon.svg`} />
       </head>
       <body>
         {children}
