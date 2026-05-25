@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 
-const STORAGE_KEY = 'multi-eval-notes';
+const STORAGE_KEY = 'kang-deok-boo';
 
 export function useNotes() {
   const [notes, setNotes] = useState([]);

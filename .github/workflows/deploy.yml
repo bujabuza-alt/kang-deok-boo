@@ -59,7 +59,7 @@ jobs:
       - name: 빌드
         run: npm run build
         env:
-          NEXT_PUBLIC_BASE_PATH: /multi-eval-note
+          NEXT_PUBLIC_BASE_PATH: /kang-deok-boo
           NEXT_PUBLIC_BUILD_ID: ${{ env.BUILD_ID }}
           BUILD_ID: ${{ env.BUILD_ID }}
 

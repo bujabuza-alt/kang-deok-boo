@@ -5,7 +5,7 @@
 // 교체됩니다. 매 배포마다 CACHE_NAME이 바뀌어 → 구버전 캐시 자동 삭제.
 // ─────────────────────────────────────────────────────────────────────────────
 const BUILD_ID = 'BUILD_ID_PLACEHOLDER';
-const CACHE_NAME = `multi-eval-note-${BUILD_ID}`;
+const CACHE_NAME = `kang-deok-boo-${BUILD_ID}`;
 
 // HTML 탐색 요청은 프리캐시하지 않음 (Network-First로 항상 최신 버전 보장)
 const PRECACHE_ASSETS = [
