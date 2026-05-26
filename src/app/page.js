@@ -12,7 +12,7 @@ import { useState, useMemo } from 'react';
 import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
   Settings2, LayoutGrid, Clock, Crown, Sparkles,
-  Download, FileJson, FileText, UtensilsCrossed,
+  Download, FileJson, FileText, Utensils,
 } from 'lucide-react';
 import { MealMenu } from '@/components/MealMenu';
 import { useNotes } from '@/hooks/useNotes';
@@ -43,8 +43,8 @@ const VIEW_MODES = [
 ];
 
 const TOP_SECTIONS = [
-  { id: 'eval', label: '평가', emoji: '⭐' },
-  { id: 'meal', label: '식사메뉴', emoji: '🍽️' },
+  { id: 'eval', label: '평가', icon: Star },
+  { id: 'meal', label: '식사메뉴', icon: Utensils },
 ];
 
 // ─── 실제 페이지 내용 (GenresProvider 안에서 useGenres 사용) ────────────────────
@@ -254,7 +254,7 @@ function HomeContent() {
         <div className="max-w-3xl mx-auto px-4 pb-3 flex flex-col gap-2">
           {/* 상단 분류 탭 (평가 / 식사메뉴) */}
           <div className="flex gap-1 border-b border-slate-100">
-            {TOP_SECTIONS.map(({ id, label, emoji }) => (
+            {TOP_SECTIONS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTopSection(id)}
@@ -264,7 +264,7 @@ function HomeContent() {
                     : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
-                <span>{emoji}</span>
+                <Icon className="w-3.5 h-3.5" />
                 {label}
               </button>
             ))}
