@@ -7,6 +7,7 @@ on:
       - claude/multi-rating-notes-app-XuRPi
       - claude/fix-icon-change-fn61Y
       - claude/fix-nextjs-cache-staleness-I5hee
+      - claude/menu-category-setup-avkmQ
   workflow_dispatch:
 
 permissions:
