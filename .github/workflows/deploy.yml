@@ -33,7 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       # ── 의존성 설치 ─────────────────────────────────────────────────────────
       - name: 패키지 설치
