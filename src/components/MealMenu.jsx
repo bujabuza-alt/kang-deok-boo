@@ -107,11 +107,18 @@ function RandomPicker({ menus }) {
   );
 }
 
-export function MealMenu() {
+export function MealMenu({ addTrigger = 0 }) {
   const { custom, loaded, add, remove } = useCustomMenus();
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+
+  useEffect(() => {
+    if (addTrigger > 0) {
+      setAdding(true);
+      setSearch('');
+    }
+  }, [addTrigger]);
 
   const allMenus = [
     ...PRESET_MENUS,
