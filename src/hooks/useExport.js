@@ -30,7 +30,7 @@ export function useExport(notes) {
   const exportJSON = useCallback(() => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const content = JSON.stringify(notes, null, 2);
-    downloadFile(`multi-eval-notes_${timestamp}.json`, content, 'application/json;charset=utf-8');
+    downloadFile(`kang-deok-boo_${timestamp}.json`, content, 'application/json;charset=utf-8');
   }, [notes]);
 
   const exportCSV = useCallback(() => {
@@ -84,7 +84,7 @@ export function useExport(notes) {
     const bom = '\uFEFF';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     downloadFile(
-      `multi-eval-notes_${timestamp}.csv`,
+      `kang-deok-boo_${timestamp}.csv`,
       bom + csvLines.join('\n'),
       'text/csv;charset=utf-8'
     );
