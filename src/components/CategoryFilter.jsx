@@ -1,19 +1,10 @@
 'use client';
-// ──────────────────────────────────────────────────────────────────────────────
-// components/CategoryFilter.jsx
-// 장르 필터 탭 컴포넌트 (구 카테고리 필터).
-// - 정적 CATEGORIES 대신 useGenres() 훅의 동적 genres를 사용합니다.
-// - '전체' 탭 + 각 장르 탭을 수평 스크롤 형태로 렌더링합니다.
-// - 노트 개수(counts)를 각 탭에 뱃지로 표시합니다.
-// ──────────────────────────────────────────────────────────────────────────────
+import { LayoutList } from 'lucide-react';
 import { useGenres } from '@/hooks/useGenres';
 
 export function CategoryFilter({ selected, onSelect, counts }) {
-  // 동적 장르 목록 사용
   const { genres } = useGenres();
-
-  // '전체' 탭은 항상 첫 번째에 표시
-  const tabs = [{ id: 'all', label: '전체', emoji: '📋' }, ...genres];
+  const tabs = [{ id: 'all', label: '전체', emoji: null }, ...genres];
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -35,7 +26,11 @@ export function CategoryFilter({ selected, onSelect, counts }) {
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 hover:scale-[1.02]'
             }`}
           >
-            <span>{genre.emoji}</span>
+            {genre.id === 'all' ? (
+              <LayoutList className="w-3.5 h-3.5" />
+            ) : (
+              <span>{genre.emoji}</span>
+            )}
             {genre.label}
             {/* 노트 개수 뱃지: 0보다 클 때만 표시 */}
             {count > 0 && (
