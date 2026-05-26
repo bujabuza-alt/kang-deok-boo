@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
-        <link rel="apple-touch-icon" href={`${basePath}/icon.svg`} />
+        <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} />
       </head>
       <body>
         {children}
