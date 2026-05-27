@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Plus, Trash2, Search, Shuffle, X } from 'lucide-react';
 
 const STORAGE_KEY = 'gangdeokbu-meal-menu-custom';
@@ -107,11 +107,21 @@ function RandomPicker({ menus }) {
   );
 }
 
-export function MealMenu() {
+export function MealMenu({ triggerAdd = false, onTriggerAddDone }) {
   const { custom, loaded, add, remove } = useCustomMenus();
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const prevTriggerAdd = useRef(false);
+
+  useEffect(() => {
+    if (triggerAdd && !prevTriggerAdd.current) {
+      setAdding(true);
+      setSearch('');
+      onTriggerAddDone?.();
+    }
+    prevTriggerAdd.current = triggerAdd;
+  }, [triggerAdd, onTriggerAddDone]);
 
   const allMenus = [
     ...PRESET_MENUS,

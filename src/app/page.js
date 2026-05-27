@@ -1,20 +1,13 @@
 'use client';
-// ──────────────────────────────────────────────────────────────────────────────
-// app/page.js
-// 메인 페이지 컴포넌트.
-//
-// 변경 사항:
-// ① 뷰 모드 전환: 카드 그리드 / 타임라인 / 명예의 전당 / 추천
-// ② 데이터 내보내기(CSV/JSON) 버튼 추가
-// ③ 모든 뷰에 동일한 필터/검색 적용
-// ──────────────────────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
   Settings2, LayoutGrid, Clock, Crown, Sparkles,
-  Download, FileJson, FileText, Utensils,
+  Download, FileJson, FileText, Utensils, Calculator,
+  ChevronRight,
 } from 'lucide-react';
 import { MealMenu } from '@/components/MealMenu';
+import { Calculator as CalculatorView } from '@/components/Calculator';
 import { useNotes } from '@/hooks/useNotes';
 import { useExport } from '@/hooks/useExport';
 import { NoteCard } from '@/components/NoteCard';
@@ -45,6 +38,7 @@ const VIEW_MODES = [
 const TOP_SECTIONS = [
   { id: 'eval', label: '평가', icon: Star },
   { id: 'meal', label: '식사메뉴', icon: Utensils },
+  { id: 'calc', label: '계산기', icon: Calculator },
 ];
 
 // ─── 실제 페이지 내용 (GenresProvider 안에서 useGenres 사용) ────────────────────
@@ -64,6 +58,8 @@ function HomeContent() {
   const [showSort, setShowSort] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [genreManagerOpen, setGenreManagerOpen] = useState(false);
+  const [addPickerOpen, setAddPickerOpen] = useState(false);
+  const [mealTriggerAdd, setMealTriggerAdd] = useState(false);
 
   const genreCounts = useMemo(() => {
     const counts = {};
@@ -106,7 +102,17 @@ function HomeContent() {
     return result;
   }, [notes, selectedGenre, searchQuery, sort]);
 
-  const handleOpenAdd = () => { setEditingNote(null); setModalOpen(true); };
+  const handleOpenAdd = () => setAddPickerOpen(true);
+  const handlePickEval = useCallback(() => {
+    setAddPickerOpen(false);
+    setEditingNote(null);
+    setModalOpen(true);
+  }, []);
+  const handlePickMeal = useCallback(() => {
+    setAddPickerOpen(false);
+    setTopSection('meal');
+    setMealTriggerAdd(true);
+  }, []);
   const handleEdit = (note) => { setEditingNote(note); setModalOpen(true); };
   const handleSave = (data) => {
     if (editingNote?.id) updateNote(editingNote.id, data);
@@ -303,7 +309,14 @@ function HomeContent() {
 
       {/* ─── 메인 콘텐츠 ──────────────────────────────────────────────────── */}
       <main className="flex-1 w-full">
-        {topSection === 'meal' && <MealMenu />}
+        {topSection === 'meal' && (
+          <MealMenu
+            triggerAdd={mealTriggerAdd}
+            onTriggerAddDone={() => setMealTriggerAdd(false)}
+          />
+        )}
+
+        {topSection === 'calc' && <CalculatorView />}
 
         {topSection === 'eval' && viewMode === 'grid' && (
           <div className="max-w-3xl mx-auto w-full px-4 py-6">
@@ -358,6 +371,50 @@ function HomeContent() {
       {/* ─── 장르 관리 모달 ───────────────────────────────────────────────── */}
       {genreManagerOpen && (
         <GenreManager onClose={() => setGenreManagerOpen(false)} />
+      )}
+
+      {/* ─── 카테고리 선택 팝업 ───────────────────────────────────────────── */}
+      {addPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setAddPickerOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAddPickerOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-5 pt-5 pb-2">
+              <h3 className="text-base font-bold text-slate-800">어디에 추가할까요?</h3>
+              <p className="text-xs text-slate-400 mt-0.5">카테고리를 선택하세요</p>
+            </div>
+            <div className="px-3 pb-4 flex flex-col gap-1">
+              <button
+                onClick={handlePickEval}
+                className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl hover:bg-indigo-50 text-left transition-colors group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                  <Star className="w-4.5 h-4.5 text-indigo-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">평가 추가</p>
+                  <p className="text-xs text-slate-400">영화·책·애니 등 평가 노트</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+              </button>
+              <button
+                onClick={handlePickMeal}
+                className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl hover:bg-orange-50 text-left transition-colors group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                  <Utensils className="w-4.5 h-4.5 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">식사메뉴 추가</p>
+                  <p className="text-xs text-slate-400">커스텀 메뉴 직접 추가</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-orange-400 transition-colors" />
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ─── 노트 삭제 확인 다이얼로그 ────────────────────────────────────── */}

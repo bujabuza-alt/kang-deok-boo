@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main
-      - claude/multi-rating-notes-app-XuRPi
-      - claude/fix-icon-change-fn61Y
-      - claude/fix-nextjs-cache-staleness-I5hee
+      - claude/calculator-menu-deploy-features-cEeSS
   workflow_dispatch:
 
 permissions:
