@@ -1,10 +1,11 @@
 'use client';
 import { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
   Settings2, LayoutGrid, Clock, Crown, Sparkles,
   Download, FileJson, FileText, Utensils, Calculator,
-  ChevronRight,
+  ChevronRight, Wallet,
 } from 'lucide-react';
 import { MealMenu } from '@/components/MealMenu';
 import { Calculator as CalculatorView } from '@/components/Calculator';
@@ -36,9 +37,10 @@ const VIEW_MODES = [
 ];
 
 const TOP_SECTIONS = [
-  { id: 'eval', label: '평가', icon: Star },
-  { id: 'meal', label: '식사메뉴', icon: Utensils },
-  { id: 'calc', label: '계산기', icon: Calculator },
+  { id: 'eval',    label: '평가',    icon: Star },
+  { id: 'meal',    label: '식사메뉴', icon: Utensils },
+  { id: 'calc',    label: '계산기',  icon: Calculator },
+  { id: 'expense', label: '지출',    icon: Wallet },
 ];
 
 // ─── 실제 페이지 내용 (GenresProvider 안에서 useGenres 사용) ────────────────────
@@ -258,22 +260,33 @@ function HomeContent() {
 
         {/* 상단 분류 탭 + 뷰 모드 탭 + 장르 필터 */}
         <div className="max-w-3xl mx-auto px-4 pb-3 flex flex-col gap-2">
-          {/* 상단 분류 탭 (평가 / 식사메뉴) */}
+          {/* 상단 분류 탭 (평가 / 식사메뉴 / 계산기 / 지출) */}
           <div className="flex gap-1 border-b border-slate-100">
-            {TOP_SECTIONS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setTopSection(id)}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 transition-all duration-150 -mb-px ${
-                  topSection === id
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
+            {TOP_SECTIONS.map(({ id, label, icon: Icon }) =>
+              id === 'expense' ? (
+                <Link
+                  key={id}
+                  href="/expense"
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all duration-150 -mb-px"
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </Link>
+              ) : (
+                <button
+                  key={id}
+                  onClick={() => setTopSection(id)}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 transition-all duration-150 -mb-px ${
+                    topSection === id
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              )
+            )}
           </div>
 
           {/* 평가 섹션: 뷰 모드 전환 탭 */}
