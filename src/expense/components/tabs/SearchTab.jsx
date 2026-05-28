@@ -32,6 +32,8 @@ const fmtMonth = (key) => {
 
 export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, onEditExpense }) {
   const { theme } = useTheme();
+  const lm = theme === 'light';
+
   const [query,        setQuery]        = useState('');
   const [dateFrom,     setDateFrom]     = useState('');
   const [dateTo,       setDateTo]       = useState('');
@@ -93,41 +95,42 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
     setActivePreset(null);
   };
 
+  const cardCls  = `rounded-2xl ${lm ? 'bg-white shadow-sm border border-slate-100' : 'bg-gray-900'}`;
+  const inputCls = `block w-full border rounded-xl px-3 py-2.5 text-sm outline-none transition-colors appearance-none ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900 placeholder-slate-300' : 'bg-gray-800 border-gray-700 focus:border-violet-500 text-white placeholder-gray-600'}`;
+  const labelCls = `block text-[10px] font-bold uppercase tracking-widest mb-1.5 ${lm ? 'text-slate-400' : 'text-gray-500'}`;
+  const itemCls  = `flex items-center justify-between p-3 rounded-xl ${lm ? 'bg-slate-50 border border-slate-100' : 'bg-gray-800'}`;
+
   return (
     <div className="space-y-4">
-      <section className="bg-gray-900 rounded-2xl overflow-hidden">
+      <section className={`${cardCls} overflow-hidden`}>
         <button
           onClick={() => setIsFilterOpen(o => !o)}
-          className="w-full px-4 py-3.5 flex items-center justify-between"
+          className={`w-full px-4 py-3.5 flex items-center justify-between ${lm ? 'hover:bg-slate-50' : ''}`}
         >
-          <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
-            <Search className="w-4 h-4 text-violet-400" />
+          <h2 className={`text-sm font-bold flex items-center gap-2 ${lm ? 'text-slate-800' : 'text-gray-200'}`}>
+            <Search className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
             지출 검색
           </h2>
           {isFilterOpen
-            ? <ChevronUp   className="w-4 h-4 text-gray-500" />
-            : <ChevronDown className="w-4 h-4 text-gray-500" />}
+            ? <ChevronUp   className={`w-4 h-4 ${lm ? 'text-slate-400' : 'text-gray-500'}`} />
+            : <ChevronDown className={`w-4 h-4 ${lm ? 'text-slate-400' : 'text-gray-500'}`} />}
         </button>
 
         {isFilterOpen && (
-          <div className="px-4 pb-4 space-y-3">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                카테고리
-              </label>
+          <div className={`px-4 pb-4 space-y-3 border-t ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
+            <div className="pt-3">
+              <label className={labelCls}>카테고리</label>
               <input
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="검색어를 입력하세요"
-                className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder-gray-600"
+                className={inputCls}
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                기간
-              </label>
+              <label className={labelCls}>기간</label>
               <div className="grid grid-cols-4 gap-1.5 mb-3">
                 {MONTH_PRESETS.map(({ label, ago }) => (
                   <button
@@ -136,8 +139,8 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
                     className={`
                       text-[11px] font-semibold px-1 py-1.5 rounded-lg border transition-all text-center
                       ${activePreset === ago
-                        ? 'bg-violet-600 border-violet-500 text-white'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-violet-600 hover:text-violet-300'}
+                        ? lm ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-violet-600 border-violet-500 text-white'
+                        : lm ? 'bg-white border-slate-200 text-slate-500 hover:border-indigo-400 hover:text-indigo-600' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-violet-600 hover:text-violet-300'}
                     `}
                   >
                     {label}
@@ -147,45 +150,43 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="block text-[9px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
+                  <span className={`block text-[9px] font-semibold uppercase tracking-wider mb-1 ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
                     시작일
                   </span>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={e => handleDateFromChange(e.target.value)}
-                    style={{ colorScheme: theme === 'japan' ? 'light' : 'dark' }}
-                    className="block w-full appearance-none bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm leading-5 text-white outline-none transition-colors"
+                    style={{ colorScheme: lm ? 'light' : 'dark' }}
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <span className="block text-[9px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
+                  <span className={`block text-[9px] font-semibold uppercase tracking-wider mb-1 ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
                     종료일
                   </span>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={e => handleDateToChange(e.target.value)}
-                    style={{ colorScheme: theme === 'japan' ? 'light' : 'dark' }}
-                    className="block w-full appearance-none bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm leading-5 text-white outline-none transition-colors"
+                    style={{ colorScheme: lm ? 'light' : 'dark' }}
+                    className={inputCls}
                   />
                 </div>
               </div>
               {dateFrom && dateTo && (
-                <p className="text-[10px] text-gray-600 mt-1.5 pl-0.5">
+                <p className={`text-[10px] mt-1.5 pl-0.5 ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
                   {dateFrom} ~ {dateTo}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                결제 수단
-              </label>
+              <label className={labelCls}>결제 수단</label>
               <select
                 value={filterPM}
                 onChange={e => setFilterPM(e.target.value)}
-                className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors appearance-none cursor-pointer"
+                className={`${inputCls} cursor-pointer`}
               >
                 <option value="전체">전체</option>
                 {paymentMethods.map(pm => (
@@ -197,7 +198,7 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                className={`flex items-center gap-1.5 text-xs transition-colors ${lm ? 'text-slate-400 hover:text-slate-600' : 'text-gray-500 hover:text-gray-300'}`}
               >
                 <X className="w-3 h-3" />
                 필터 초기화
@@ -207,18 +208,18 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
         )}
       </section>
 
-      <section className="bg-gray-900 rounded-2xl p-4 space-y-3">
+      <section className={`${cardCls} p-4 space-y-3`}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-400">
+          <span className={`text-xs font-bold ${lm ? 'text-slate-500' : 'text-gray-400'}`}>
             검색 결과 {results.length}건
           </span>
           <div className="flex items-center gap-3">
             {results.length > 0 && (
-              <span className="text-xs font-bold text-rose-400">합계 ₩{fmt(total)}</span>
+              <span className="text-xs font-bold text-rose-500">합계 ₩{fmt(total)}</span>
             )}
             <button
               onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')}
-              className="flex items-center gap-1 text-[11px] font-semibold text-gray-400 hover:text-violet-400 bg-gray-800 px-2.5 py-1 rounded-lg transition-colors"
+              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${lm ? 'text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50' : 'text-gray-400 hover:text-violet-400 bg-gray-800'}`}
             >
               {sortOrder === 'desc'
                 ? <><ArrowDown className="w-3 h-3" />느린순</>
@@ -230,7 +231,7 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
         {results.length === 0 ? (
           <div className="text-center py-10">
             <div className="text-3xl mb-2">🔍</div>
-            <p className="text-sm text-gray-600">
+            <p className={`text-sm ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
               {hasFilters ? '검색 결과가 없습니다' : '검색어 또는 필터를 입력하세요'}
             </p>
           </div>
@@ -238,35 +239,32 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
           <div className="space-y-5">
             {groupedResults.map(([monthKey, items]) => (
               <div key={monthKey}>
-                <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-gray-800">
-                  <span className="text-[11px] font-bold text-violet-400">
+                <div className={`flex items-center justify-between mb-2 pb-1.5 border-b ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
+                  <span className={`text-[11px] font-bold ${lm ? 'text-indigo-600' : 'text-violet-400'}`}>
                     {fmtMonth(monthKey)}
                   </span>
-                  <span className="text-[10px] font-semibold text-gray-500">
+                  <span className={`text-[10px] font-semibold ${lm ? 'text-slate-400' : 'text-gray-500'}`}>
                     ₩{fmt(items.reduce((s, e) => s + e.amount, 0))}
                   </span>
                 </div>
                 <ul className="space-y-2">
                   {items.map(e => (
-                    <li
-                      key={e.id}
-                      className="flex items-center justify-between p-3 bg-gray-800 rounded-xl"
-                    >
+                    <li key={e.id} className={itemCls}>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-100 font-semibold truncate">{e.name}</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">
+                        <p className={`text-sm font-semibold truncate ${lm ? 'text-slate-800' : 'text-gray-100'}`}>{e.name}</p>
+                        <p className={`text-[10px] mt-0.5 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>
                           {e.date} · {e.paymentMethod}
                         </p>
                         {e.memo && (
-                          <p className="text-[10px] text-gray-600 mt-0.5 truncate">{e.memo}</p>
+                          <p className={`text-[10px] mt-0.5 truncate ${lm ? 'text-slate-300' : 'text-gray-600'}`}>{e.memo}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 ml-3 shrink-0">
-                        <span className="text-sm font-bold text-rose-400">₩{fmt(e.amount)}</span>
+                        <span className="text-sm font-bold text-rose-500">₩{fmt(e.amount)}</span>
                         {onEditExpense && (
                           <button
                             onClick={() => onEditExpense(e)}
-                            className="text-gray-600 hover:text-violet-400 transition-colors"
+                            className={`transition-colors ${lm ? 'text-slate-300 hover:text-indigo-600' : 'text-gray-600 hover:text-violet-400'}`}
                             aria-label="편집"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -274,7 +272,7 @@ export default function SearchTab({ expenses, paymentMethods, onDeleteExpense, o
                         )}
                         <button
                           onClick={() => onDeleteExpense(e.id)}
-                          className="text-gray-700 hover:text-red-400 transition-colors"
+                          className={`transition-colors ${lm ? 'text-slate-300 hover:text-red-500' : 'text-gray-700 hover:text-red-400'}`}
                           aria-label="삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
