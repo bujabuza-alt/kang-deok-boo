@@ -396,15 +396,34 @@ function DataManagementSection({
     },
   ];
 
+  const normalizeBackup = (json) => {
+    // 현재 앱 형식: { type: 'full', expenses, budget, paymentMethods, presets, categories }
+    if (json.type === 'full') return json;
+
+    // 기존 앱 형식: expenses 배열이 최상위에 있는 경우
+    if (Array.isArray(json.expenses)) return { ...json, type: 'full' };
+
+    // 기존 앱의 또 다른 형식: { records, ... } 또는 { data: { expenses, ... } }
+    if (json.data && Array.isArray(json.data.expenses)) {
+      return { type: 'full', ...json.data };
+    }
+    if (Array.isArray(json.records)) {
+      return { type: 'full', expenses: json.records, ...json };
+    }
+
+    return null;
+  };
+
   const doFullImport = () => {
     triggerImport((json) => {
-      if (json.type !== 'full') { showMsg('error', '전체 백업 파일이 아닙니다.'); return; }
+      const normalized = normalizeBackup(json);
+      if (!normalized) { showMsg('error', '지원하지 않는 백업 파일 형식입니다.'); return; }
       if (!window.confirm('전체 데이터를 복원할까요? 현재 데이터는 모두 사라집니다.')) return;
-      if (Array.isArray(json.expenses))        onUpdateExpenses(json.expenses);
-      if (typeof json.budget === 'number')     onUpdateBudget(json.budget);
-      if (Array.isArray(json.paymentMethods))  onUpdatePaymentMethods(json.paymentMethods);
-      if (Array.isArray(json.presets))         onUpdatePresets(json.presets);
-      if (Array.isArray(json.categories))      onUpdateCategories(json.categories);
+      if (Array.isArray(normalized.expenses))        onUpdateExpenses(normalized.expenses);
+      if (typeof normalized.budget === 'number')     onUpdateBudget(normalized.budget);
+      if (Array.isArray(normalized.paymentMethods))  onUpdatePaymentMethods(normalized.paymentMethods);
+      if (Array.isArray(normalized.presets))         onUpdatePresets(normalized.presets);
+      if (Array.isArray(normalized.categories))      onUpdateCategories(normalized.categories);
       showMsg('success', '전체 데이터를 복원했습니다.');
     });
   };
