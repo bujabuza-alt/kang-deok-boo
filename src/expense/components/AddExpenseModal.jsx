@@ -9,6 +9,8 @@ export default function AddExpenseModal({
   editMode = false, editingExpense = null,
 }) {
   const { theme } = useTheme();
+  const lm = theme === 'light';
+
   const installments  = Math.max(1, parseInt(form.installmentMonths, 10) || 1);
   const totalAmount   = parseFloat(form.amount) || 0;
   const perMonth      = installments > 1 && totalAmount > 0
@@ -38,55 +40,51 @@ export default function AddExpenseModal({
     setShowCustom(true);
   };
 
+  const labelCls = `block text-[10px] font-bold uppercase tracking-widest mb-1.5 ${lm ? 'text-slate-400' : 'text-gray-500'}`;
+  const inputCls = `block w-full border rounded-xl px-3 py-2.5 text-sm outline-none transition-colors ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900 placeholder-slate-300' : 'bg-gray-800 border-gray-700 focus:border-violet-500 text-white placeholder-gray-600'}`;
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-gray-900 rounded-t-3xl shadow-2xl animate-slide-up"
+        className={`w-full max-w-md rounded-t-3xl shadow-2xl animate-slide-up ${lm ? 'bg-white' : 'bg-gray-900'}`}
         style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="px-5 pt-4">
-          <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+          <div className={`w-10 h-1 rounded-full mx-auto mb-5 ${lm ? 'bg-slate-200' : 'bg-gray-700'}`} />
 
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-base font-bold">
+            <h3 className={`text-base font-bold ${lm ? 'text-slate-900' : 'text-white'}`}>
               {editMode ? '지출 편집' : '지출 추가'}
             </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
-            >
+            <button onClick={onClose} className={`transition-colors ${lm ? 'text-slate-400 hover:text-slate-600' : 'text-gray-500 hover:text-gray-300'}`}>
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {isInstallmentGroup && (
-            <div className="mb-4 px-3 py-2.5 bg-violet-900/30 border border-violet-700/40 rounded-xl text-[11px] text-violet-300 leading-relaxed">
+            <div className={`mb-4 px-3 py-2.5 rounded-xl text-[11px] leading-relaxed ${lm ? 'bg-indigo-50 border border-indigo-200 text-indigo-700' : 'bg-violet-900/30 border border-violet-700/40 text-violet-300'}`}>
               할부 항목입니다. 이름·금액·결제수단을 수정하면 같은 그룹의 모든 항목에 자동 반영됩니다.
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                날짜
-              </label>
+              <label className={labelCls}>날짜</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={e => onFieldChange('date', e.target.value)}
-                style={{ colorScheme: theme === 'japan' ? 'light' : 'dark' }}
-                className="block w-full appearance-none bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm leading-5 text-white outline-none transition-colors"
+                style={{ colorScheme: lm ? 'light' : 'dark' }}
+                className={`${inputCls} appearance-none leading-5`}
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
-                카테고리
-              </label>
+              <label className={labelCls}>카테고리</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {categories.map(c => {
                   const selected = !showCustom && form.name === c.name;
@@ -97,8 +95,8 @@ export default function AddExpenseModal({
                       onClick={() => selectCategory(c.name)}
                       className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
                         selected
-                          ? 'bg-violet-600 border-transparent text-white'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-violet-500 hover:text-violet-300'
+                          ? lm ? 'bg-indigo-600 border-transparent text-white' : 'bg-violet-600 border-transparent text-white'
+                          : lm ? 'bg-white border-slate-200 text-slate-500 hover:border-indigo-400 hover:text-indigo-600' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-violet-500 hover:text-violet-300'
                       }`}
                     >
                       {c.name}
@@ -110,8 +108,8 @@ export default function AddExpenseModal({
                   onClick={openCustomInput}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
                     showCustom
-                      ? 'bg-violet-600 border-transparent text-white'
-                      : 'bg-gray-800 border-dashed border-gray-600 text-gray-500 hover:border-violet-500 hover:text-violet-300'
+                      ? lm ? 'bg-indigo-600 border-transparent text-white' : 'bg-violet-600 border-transparent text-white'
+                      : lm ? 'bg-white border-dashed border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-600' : 'bg-gray-800 border-dashed border-gray-600 text-gray-500 hover:border-violet-500 hover:text-violet-300'
                   }`}
                 >
                   직접 입력
@@ -125,15 +123,13 @@ export default function AddExpenseModal({
                   placeholder="카테고리를 직접 입력하세요"
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && isValid && onSubmit()}
-                  className="block w-full bg-gray-800 border border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder-gray-600"
+                  className={`block w-full border rounded-xl px-3 py-2.5 text-sm outline-none transition-colors ${lm ? 'bg-white border-indigo-400 text-slate-900 placeholder-slate-300' : 'bg-gray-800 border-violet-500 text-white placeholder-gray-600'}`}
                 />
               )}
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                금액 (원)
-              </label>
+              <label className={labelCls}>금액 (원)</label>
               <input
                 type="number"
                 value={form.amount}
@@ -142,15 +138,13 @@ export default function AddExpenseModal({
                 min="0"
                 inputMode="numeric"
                 onKeyDown={e => e.key === 'Enter' && isValid && onSubmit()}
-                className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder-gray-600"
+                className={inputCls}
               />
             </div>
 
             {!editMode && (
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                  할부 개월
-                </label>
+                <label className={labelCls}>할부 개월</label>
                 <input
                   type="number"
                   value={form.installmentMonths ?? '1'}
@@ -159,13 +153,13 @@ export default function AddExpenseModal({
                   min="1"
                   max="60"
                   inputMode="numeric"
-                  className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder-gray-600"
+                  className={inputCls}
                 />
                 {installments > 1 && (
-                  <p className="text-[11px] text-violet-400 mt-1 pl-0.5">
+                  <p className={`text-[11px] mt-1 pl-0.5 ${lm ? 'text-indigo-600' : 'text-violet-400'}`}>
                     월 ₩{fmt(perMonth)} × {installments}개월
                     {totalAmount % installments !== 0 && (
-                      <span className="text-gray-500 ml-1">
+                      <span className={`ml-1 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>
                         (첫 달 ₩{fmt(totalAmount - perMonth * (installments - 1))})
                       </span>
                     )}
@@ -175,13 +169,11 @@ export default function AddExpenseModal({
             )}
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                결제 수단
-              </label>
+              <label className={labelCls}>결제 수단</label>
               <select
                 value={form.paymentMethod}
                 onChange={e => onFieldChange('paymentMethod', e.target.value)}
-                className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors appearance-none cursor-pointer"
+                className={`${inputCls} appearance-none cursor-pointer`}
               >
                 {paymentMethods.map(pm => (
                   <option key={pm} value={pm}>{pm}</option>
@@ -190,15 +182,13 @@ export default function AddExpenseModal({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                메모 (선택)
-              </label>
+              <label className={labelCls}>메모 (선택)</label>
               <textarea
                 value={form.memo ?? ''}
                 onChange={e => onFieldChange('memo', e.target.value)}
                 placeholder="메모를 입력하세요"
                 rows={2}
-                className="block w-full bg-gray-800 border border-gray-700 focus:border-violet-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder-gray-600 resize-none"
+                className={`${inputCls} resize-none`}
               />
             </div>
           </div>
@@ -206,7 +196,11 @@ export default function AddExpenseModal({
           <button
             onClick={onSubmit}
             disabled={!isValid}
-            className="mt-5 w-full py-3.5 bg-violet-600 hover:bg-violet-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+            className={`mt-5 w-full py-3.5 font-bold rounded-xl transition-colors ${
+              isValid
+                ? lm ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-violet-600 hover:bg-violet-500 text-white'
+                : lm ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+            }`}
           >
             {editMode ? '수정하기' : '추가하기'}
           </button>

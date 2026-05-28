@@ -32,6 +32,18 @@ export const addMonths = (dateStr, months) => {
   return `${targetYear}-${String(targetMo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
+export const exportJSON = (filename, data) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
 export const ls = {
   get: (key, fallback) => {
     try {

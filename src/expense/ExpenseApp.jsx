@@ -20,11 +20,11 @@ import SettingsTab from '@/expense/components/tabs/SettingsTab';
 export default function ExpenseApp() {
   const now = new Date();
   const { theme, setTheme } = useTheme();
+  const lm = theme === 'light';
 
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
 
-  // SSR 안전: 기본값으로 초기화 후 useEffect에서 localStorage 로드
   const [loaded,         setLoaded]         = useState(false);
   const [expenses,       setExpenses]       = useState([]);
   const [budget,         setBudget]         = useState(500000);
@@ -58,20 +58,18 @@ export default function ExpenseApp() {
     memo:              '',
   });
 
-  const [showEditModal,   setShowEditModal]   = useState(false);
-  const [editingExpense,  setEditingExpense]  = useState(null);
-  const [editForm,        setEditForm]        = useState({
+  const [showEditModal,  setShowEditModal]  = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editForm,       setEditForm]       = useState({
     date: '', name: '', amount: '', paymentMethod: '', memo: '',
   });
 
-  // localStorage 자동 동기화 (loaded 후에만 실행)
   useEffect(() => { if (loaded) ls.set('et_expenses',        expenses);       }, [expenses,       loaded]);
   useEffect(() => { if (loaded) ls.set('et_budget',          budget);         }, [budget,         loaded]);
   useEffect(() => { if (loaded) ls.set('et_payment_methods', paymentMethods); }, [paymentMethods, loaded]);
   useEffect(() => { if (loaded) ls.set('et_presets',         presets);        }, [presets,        loaded]);
   useEffect(() => { if (loaded) ls.set('et_categories',      categories);     }, [categories,     loaded]);
 
-  // form의 결제수단 초기값을 paymentMethods 로드 후 동기화
   useEffect(() => {
     if (loaded && paymentMethods.length > 0) {
       setForm(f => ({ ...f, paymentMethod: paymentMethods[0] }));
@@ -121,14 +119,7 @@ export default function ExpenseApp() {
   };
 
   const openAddModal = (date = TODAY) => {
-    setForm({
-      date,
-      name:              '',
-      amount:            '',
-      paymentMethod:     paymentMethods[0] ?? '',
-      installmentMonths: '1',
-      memo:              '',
-    });
+    setForm({ date, name: '', amount: '', paymentMethod: paymentMethods[0] ?? '', installmentMonths: '1', memo: '' });
     setShowAddModal(true);
     setFabOpen(false);
   };
@@ -140,12 +131,8 @@ export default function ExpenseApp() {
 
     if (installments <= 1) {
       setExpenses(prev => [...prev, {
-        id:            uid(),
-        date:          form.date,
-        name:          form.name.trim(),
-        amount,
-        paymentMethod: form.paymentMethod,
-        memo:          form.memo.trim(),
+        id: uid(), date: form.date, name: form.name.trim(),
+        amount, paymentMethod: form.paymentMethod, memo: form.memo.trim(),
       }]);
     } else {
       const groupId   = uid();
@@ -165,18 +152,14 @@ export default function ExpenseApp() {
       }));
       setExpenses(prev => [...prev, ...entries]);
     }
-
     setShowAddModal(false);
   };
 
   const openEditModal = (expense) => {
     setEditingExpense(expense);
     setEditForm({
-      date:          expense.date,
-      name:          expense.name,
-      amount:        String(expense.amount),
-      paymentMethod: expense.paymentMethod,
-      memo:          expense.memo ?? '',
+      date: expense.date, name: expense.name, amount: String(expense.amount),
+      paymentMethod: expense.paymentMethod, memo: expense.memo ?? '',
     });
     setShowEditModal(true);
   };
@@ -190,26 +173,23 @@ export default function ExpenseApp() {
     if (editingExpense.installmentGroupId) {
       const groupId = editingExpense.installmentGroupId;
       setExpenses(prev => prev.map(e => {
-        if (e.id === editingExpense.id) {
+        if (e.id === editingExpense.id)
           return { ...e, date: editForm.date, name: newName, amount, paymentMethod: editForm.paymentMethod, memo: editForm.memo };
-        }
-        if (e.installmentGroupId === groupId) {
+        if (e.installmentGroupId === groupId)
           return { ...e, name: newName, amount, paymentMethod: editForm.paymentMethod };
-        }
         return e;
       }));
     } else {
       const legacyMatch = editingExpense.name.match(/^(.+) \((\d+)\/(\d+)개월\)$/);
       if (legacyMatch) {
         const [, origBase, , totalStr] = legacyMatch;
-        const total = parseInt(totalStr, 10);
+        const total        = parseInt(totalStr, 10);
         const newNameMatch = newName.match(/^(.+) \(\d+\/\d+개월\)$/);
-        const newBase = newNameMatch ? newNameMatch[1] : newName;
+        const newBase      = newNameMatch ? newNameMatch[1] : newName;
 
         setExpenses(prev => prev.map(e => {
-          if (e.id === editingExpense.id) {
+          if (e.id === editingExpense.id)
             return { ...e, date: editForm.date, name: newName, amount, paymentMethod: editForm.paymentMethod, memo: editForm.memo };
-          }
           const sub = e.name.match(/^(.+) \((\d+)\/(\d+)개월\)$/);
           if (sub && sub[1] === origBase && parseInt(sub[3], 10) === total) {
             const k = parseInt(sub[2], 10);
@@ -232,18 +212,12 @@ export default function ExpenseApp() {
 
   const addPreset = (preset) => {
     setExpenses(prev => [...prev, {
-      id:            uid(),
-      date:          selDate || TODAY,
-      name:          preset.name,
-      amount:        preset.amount,
-      paymentMethod: preset.paymentMethod,
-      memo:          '',
+      id: uid(), date: selDate || TODAY,
+      name: preset.name, amount: preset.amount, paymentMethod: preset.paymentMethod, memo: '',
     }]);
   };
 
-  const deleteExpense = (id) =>
-    setExpenses(prev => prev.filter(e => e.id !== id));
-
+  const deleteExpense  = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
   const renameCategory = (oldName, newName) => {
     setCategories(prev => prev.map(c => c.name === oldName ? { ...c, name: newName } : c));
     setExpenses(prev => prev.map(e => e.name === oldName ? { ...e, name: newName } : e));
@@ -256,27 +230,15 @@ export default function ExpenseApp() {
     setBudgetDraft('');
   };
 
-  const handleFabToggle = () => setFabOpen(o => !o);
-
-  const handleGeneralAdd = () => {
-    setFabOpen(false);
-    openAddModal(selDate || TODAY);
-  };
-
-  const handleQuickAdd = () => {
-    setFabOpen(false);
-    setShowQuickModal(true);
-  };
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setFabOpen(false);
-  };
+  const handleFabToggle  = () => setFabOpen(o => !o);
+  const handleGeneralAdd = () => { setFabOpen(false); openAddModal(selDate || TODAY); };
+  const handleQuickAdd   = () => { setFabOpen(false); setShowQuickModal(true); };
+  const handleTabChange  = (tab) => { setActiveTab(tab); setFabOpen(false); };
 
   if (!loaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
-        <div className="w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full animate-spin" />
+      <div className={`flex items-center justify-center min-h-screen ${lm ? 'bg-slate-50' : 'bg-gray-950'}`}>
+        <div className={`w-8 h-8 border-4 border-t-transparent rounded-full animate-spin ${lm ? 'border-indigo-400' : 'border-violet-400'}`} />
       </div>
     );
   }
@@ -284,15 +246,16 @@ export default function ExpenseApp() {
   return (
     <div
       data-theme={theme}
-      className="min-h-screen bg-gray-950 text-white"
+      className={`min-h-screen ${lm ? 'bg-slate-50 text-slate-900' : 'bg-gray-950 text-white'}`}
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
+      {/* 헤더: 스크롤 시 상단 고정 */}
+      <Header />
+
       <div
-        className="max-w-md mx-auto px-4 py-6 space-y-4"
+        className="max-w-md mx-auto px-4 py-4 space-y-4"
         style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
       >
-        <Header />
-
         {activeTab === 'home' && (
           <HomeTab
             budget={budget}            monthTotal={monthTotal}
@@ -350,6 +313,10 @@ export default function ExpenseApp() {
             onRenameCategory={renameCategory}
             theme={theme}
             onThemeChange={setTheme}
+            expenses={expenses}
+            budget={budget}
+            onUpdateExpenses={setExpenses}
+            onUpdateBudget={setBudget}
           />
         )}
       </div>

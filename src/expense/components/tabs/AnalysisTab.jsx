@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { BarChart2 } from 'lucide-react';
 import { fmt }    from '@/expense/utils';
 import { MONTHS } from '@/expense/constants';
+import { useTheme } from '@/expense/context/ThemeContext';
 
 const PALETTE = [
   'bg-violet-500', 'bg-blue-500',   'bg-emerald-500', 'bg-amber-400',
@@ -11,6 +12,9 @@ const PALETTE = [
 ];
 
 export default function AnalysisTab({ expenses, budget, year, month }) {
+  const { theme } = useTheme();
+  const lm = theme === 'light';
+
   const monthExpenses = useMemo(() => {
     const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
     return expenses.filter(e => e.date.startsWith(prefix));
@@ -41,29 +45,31 @@ export default function AnalysisTab({ expenses, budget, year, month }) {
     budgetPct < 60 ? 'bg-emerald-500' :
     budgetPct < 85 ? 'bg-amber-400'   : 'bg-red-500';
 
+  const cardCls = `rounded-2xl p-4 space-y-3 ${lm ? 'bg-white shadow-sm border border-slate-100' : 'bg-gray-900'}`;
+
   return (
     <div className="space-y-4">
-      <section className="bg-gray-900 rounded-2xl p-4 space-y-3">
+      <section className={cardCls}>
         <div className="flex items-center gap-2">
-          <BarChart2 className="w-4 h-4 text-violet-400" />
-          <span className="text-sm font-bold">{year}년 {MONTHS[month]} 분석</span>
+          <BarChart2 className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
+          <span className={`text-sm font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{year}년 {MONTHS[month]} 분석</span>
         </div>
 
         <div className="flex items-baseline justify-between">
-          <span className="text-2xl font-black">₩{fmt(monthTotal)}</span>
+          <span className={`text-2xl font-black ${lm ? 'text-slate-900' : 'text-white'}`}>₩{fmt(monthTotal)}</span>
           {budget > 0 && (
-            <span className="text-xs text-gray-500">예산 ₩{fmt(budget)}</span>
+            <span className={`text-xs ${lm ? 'text-slate-400' : 'text-gray-500'}`}>예산 ₩{fmt(budget)}</span>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className={`w-full h-2 rounded-full overflow-hidden ${lm ? 'bg-slate-100' : 'bg-gray-800'}`}>
             <div
               className={`h-full rounded-full transition-all duration-700 ${barColor}`}
               style={{ width: `${budgetPct}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-gray-600">
+          <div className={`flex justify-between text-[10px] ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
             <span>{budgetPct.toFixed(1)}% 사용</span>
             {budget > 0 && (
               <span>
@@ -76,13 +82,13 @@ export default function AnalysisTab({ expenses, budget, year, month }) {
         </div>
       </section>
 
-      <section className="bg-gray-900 rounded-2xl p-4 space-y-4">
-        <h3 className="text-sm font-bold text-gray-300">카테고리별 지출 비중</h3>
+      <section className={`rounded-2xl p-4 space-y-4 ${lm ? 'bg-white shadow-sm border border-slate-100' : 'bg-gray-900'}`}>
+        <h3 className={`text-sm font-bold ${lm ? 'text-slate-700' : 'text-gray-300'}`}>카테고리별 지출 비중</h3>
 
         {categories.length === 0 ? (
           <div className="text-center py-10">
             <div className="text-3xl mb-2">📊</div>
-            <p className="text-sm text-gray-600">이번 달 지출 내역이 없습니다</p>
+            <p className={`text-sm ${lm ? 'text-slate-400' : 'text-gray-600'}`}>이번 달 지출 내역이 없습니다</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -93,21 +99,21 @@ export default function AnalysisTab({ expenses, budget, year, month }) {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${color}`} />
-                      <span className="text-sm text-gray-200 font-medium truncate">{name}</span>
+                      <span className={`text-sm font-medium truncate ${lm ? 'text-slate-700' : 'text-gray-200'}`}>{name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-gray-500">{pct.toFixed(1)}%</span>
-                      <span className="text-sm font-bold text-rose-400">₩{fmt(amount)}</span>
+                      <span className={`text-xs ${lm ? 'text-slate-400' : 'text-gray-500'}`}>{pct.toFixed(1)}%</span>
+                      <span className="text-sm font-bold text-rose-500">₩{fmt(amount)}</span>
                     </div>
                   </div>
-                  <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div className={`w-full h-1.5 rounded-full overflow-hidden ${lm ? 'bg-slate-100' : 'bg-gray-800'}`}>
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${color}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                   {budget > 0 && (
-                    <p className="text-[10px] text-gray-600 pl-4">
+                    <p className={`text-[10px] pl-4 ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
                       전체 예산의 {bpct.toFixed(1)}% 차지
                     </p>
                   )}
