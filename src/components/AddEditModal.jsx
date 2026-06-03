@@ -9,8 +9,7 @@
 // ③ note.posterUrl 필드 저장 지원
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useMemo } from 'react';
-import { X, Tag, Plus, BarChart2, Hexagon, Pencil, Trash2, Image, Crown } from 'lucide-react';
-import { PosterSearch } from './PosterSearch';
+import { X, Tag, Plus, BarChart2, Hexagon, Pencil, Trash2, Crown } from 'lucide-react';
 import { useGenres } from '@/hooks/useGenres';
 import { StarRating } from './StarRating';
 import { ScoreVisualization } from './ScoreVisualization';
@@ -26,7 +25,7 @@ const makeDefaultForm = (firstGenreId) => ({
   scores: {},
   vizType: 'radar',
   evalItems: null,
-  posterUrl: null,
+  namuwikiUrl: '',
   masterpiece: false,
 });
 
@@ -106,7 +105,6 @@ export function AddEditModal({ note, onSave, onClose }) {
   const [tagInput, setTagInput] = useState('');
   const [newItemInput, setNewItemInput] = useState('');
   const [showItemEdit, setShowItemEdit] = useState(false);
-  const [showPosterSearch, setShowPosterSearch] = useState(false);
 
   // note prop이 바뀔 때 폼 초기화
   useEffect(() => {
@@ -124,7 +122,7 @@ export function AddEditModal({ note, onSave, onClose }) {
         scores: note.scores || {},
         vizType: note.vizType || 'radar',
         evalItems: note.evalItems || [...(genre.defaultItems || [])],
-        posterUrl: note.posterUrl || null,
+        namuwikiUrl: note.namuwikiUrl || '',
         masterpiece: note.masterpiece || false,
       });
     } else {
@@ -280,59 +278,25 @@ export function AddEditModal({ note, onSave, onClose }) {
             />
           </div>
 
-          {/* ── 포스터 이미지 ───────────────────────────────────────── */}
+          {/* ── 나무위키 링크 ──────────────────────────────────────────── */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-slate-700">포스터 이미지</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">나무위키 링크</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={form.namuwikiUrl}
+                onChange={(e) => set('namuwikiUrl', e.target.value)}
+                placeholder="나무위키 링크를 입력해 주세요."
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-800 placeholder:text-slate-400 text-sm"
+              />
               <button
                 type="button"
-                onClick={() => setShowPosterSearch((v) => !v)}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                  showPosterSearch
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
-                }`}
+                onClick={() => { if (form.namuwikiUrl) navigator.clipboard?.writeText(form.namuwikiUrl); }}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 text-sm font-medium transition-colors shrink-0"
               >
-                <Image className="w-3 h-3" />
-                {form.posterUrl ? '변경' : '검색'}
+                복사
               </button>
             </div>
-
-            {/* 현재 선택된 포스터 미리보기 */}
-            {form.posterUrl && !showPosterSearch && (
-              <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
-                <img
-                  src={form.posterUrl}
-                  alt="포스터"
-                  className="w-12 h-16 object-cover rounded-lg shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 truncate">{form.posterUrl}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => set('posterUrl', null)}
-                  className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors shrink-0"
-                  aria-label="포스터 제거"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* 포스터 검색 패널 */}
-            {showPosterSearch && (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <PosterSearch
-                  genreId={form.genre}
-                  genreLabel={getGenreById(form.genre)?.label || ''}
-                  title={form.title}
-                  currentUrl={form.posterUrl}
-                  onSelect={(url) => set('posterUrl', url)}
-                  onClose={() => setShowPosterSearch(false)}
-                />
-              </div>
-            )}
           </div>
 
           {/* ── 장르 선택 (구 '카테고리') ─────────────────────────────── */}

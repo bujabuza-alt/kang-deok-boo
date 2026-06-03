@@ -5,8 +5,22 @@ import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
   Settings2, LayoutGrid, Clock, Crown, Sparkles,
   Download, FileJson, FileText, Utensils, Calculator,
-  ChevronRight, Wallet,
+  ChevronRight, Wallet, GripVertical, X,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { MealMenu } from '@/components/MealMenu';
 import { Calculator as CalculatorView } from '@/components/Calculator';
 import { useNotes } from '@/hooks/useNotes';
@@ -43,6 +57,81 @@ const TOP_SECTIONS = [
   { id: 'expense', label: '지출',    icon: Wallet },
 ];
 
+// ─── 드래그 가능한 탭 아이템 ────────────────────────────────────────────────────
+function SortableTab({ section, isActive, onClick }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const Icon = section.icon;
+
+  const grip = (
+    <span
+      {...listeners}
+      {...attributes}
+      className="p-1 cursor-grab active:cursor-grabbing touch-none text-slate-300 hover:text-slate-400 shrink-0"
+      aria-label="탭 순서 변경"
+    >
+      <GripVertical className="w-3 h-3" />
+    </span>
+  );
+
+  if (section.id === 'expense') {
+    return (
+      <div ref={setNodeRef} style={style} className="flex items-center">
+        {grip}
+        <Link
+          href="/expense"
+          className="flex items-center gap-1 px-2 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all duration-150 -mb-px"
+        >
+          <Icon className="w-3.5 h-3.5" />
+          {section.label}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center">
+      {grip}
+      <button
+        onClick={onClick}
+        className={`flex items-center gap-1 px-2 py-2 text-sm font-semibold border-b-2 transition-all duration-150 -mb-px ${
+          isActive
+            ? 'border-indigo-600 text-indigo-600'
+            : 'border-transparent text-slate-500 hover:text-slate-700'
+        }`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+        {section.label}
+      </button>
+    </div>
+  );
+}
+
+// ─── 업데이트 내역 박스 ──────────────────────────────────────────────────────────
+function UpdateHistoryBox() {
+  const [visible, setVisible] = useState(true);
+  if (!visible) return null;
+  return (
+    <div className="fixed bottom-[92px] right-3 sm:bottom-3 sm:right-3 z-20 max-w-[210px]">
+      <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl shadow-md p-2.5 relative">
+        <button
+          onClick={() => setVisible(false)}
+          className="absolute top-1 right-1 p-0.5 rounded-md hover:bg-slate-100 text-slate-300 hover:text-slate-500 transition-colors"
+          aria-label="닫기"
+        >
+          <X className="w-3 h-3" />
+        </button>
+        <p className="text-[10px] font-bold text-slate-700 mb-1 pr-4">[업데이트 내역]</p>
+        <ul className="text-[10px] text-slate-500 space-y-0.5 leading-relaxed">
+          <li>• 카테고리 순서 변경 기능 추가.</li>
+          <li>• 하단 '+' 버튼 평가 전용 변경.</li>
+          <li>• 수정 화면에서 포스터 삭제 및 나무위키 링크 추가.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ─── 실제 페이지 내용 (GenresProvider 안에서 useGenres 사용) ────────────────────
 function HomeContent() {
   const { notes, loaded, addNote, updateNote, deleteNote } = useNotes();
@@ -62,6 +151,18 @@ function HomeContent() {
   const [genreManagerOpen, setGenreManagerOpen] = useState(false);
   const [addPickerOpen, setAddPickerOpen] = useState(false);
   const [mealTriggerAdd, setMealTriggerAdd] = useState(false);
+  const [topSections, setTopSections] = useState(TOP_SECTIONS);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const handleSectionDragEnd = ({ active, over }) => {
+    if (over && active.id !== over.id) {
+      setTopSections((prev) => {
+        const oldIndex = prev.findIndex((s) => s.id === active.id);
+        const newIndex = prev.findIndex((s) => s.id === over.id);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    }
+  };
 
   const genreCounts = useMemo(() => {
     const counts = {};
@@ -260,34 +361,21 @@ function HomeContent() {
 
         {/* 상단 분류 탭 + 뷰 모드 탭 + 장르 필터 */}
         <div className="max-w-3xl mx-auto px-4 pb-3 flex flex-col gap-2">
-          {/* 상단 분류 탭 (평가 / 식사메뉴 / 계산기 / 지출) */}
-          <div className="flex gap-1 border-b border-slate-100">
-            {TOP_SECTIONS.map(({ id, label, icon: Icon }) =>
-              id === 'expense' ? (
-                <Link
-                  key={id}
-                  href="/expense"
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all duration-150 -mb-px"
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </Link>
-              ) : (
-                <button
-                  key={id}
-                  onClick={() => setTopSection(id)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 transition-all duration-150 -mb-px ${
-                    topSection === id
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              )
-            )}
-          </div>
+          {/* 상단 분류 탭 (드래그로 순서 변경 가능) */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+            <SortableContext items={topSections.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
+              <div className="flex gap-0 border-b border-slate-100 overflow-x-auto">
+                {topSections.map((section) => (
+                  <SortableTab
+                    key={section.id}
+                    section={section}
+                    isActive={topSection === section.id}
+                    onClick={() => setTopSection(section.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           {/* 평가 섹션: 뷰 모드 전환 탭 */}
           {topSection === 'eval' && (
@@ -365,9 +453,9 @@ function HomeContent() {
 
       {/* ─── FAB (모바일) ─────────────────────────────────────────────────── */}
       <button
-        onClick={handleOpenAdd}
+        onClick={() => { setEditingNote(null); setModalOpen(true); }}
         className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center z-30"
-        aria-label="새 노트 추가"
+        aria-label="새 평가 추가"
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -429,6 +517,9 @@ function HomeContent() {
           </div>
         </div>
       )}
+
+      {/* ─── 업데이트 내역 정보 박스 ──────────────────────────────────────── */}
+      <UpdateHistoryBox />
 
       {/* ─── 노트 삭제 확인 다이얼로그 ────────────────────────────────────── */}
       {deleteConfirm && (
