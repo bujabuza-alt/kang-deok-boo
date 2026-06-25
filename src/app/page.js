@@ -5,7 +5,7 @@ import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
   Settings2, LayoutGrid, Clock, Crown, Sparkles,
   Download, FileJson, FileText, Utensils, Calculator,
-  ChevronRight, Wallet, GripVertical, X,
+  ChevronRight, Wallet, GripVertical, X, ListTodo,
 } from 'lucide-react';
 import {
   DndContext,
@@ -23,6 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { MealMenu } from '@/components/MealMenu';
 import { Calculator as CalculatorView } from '@/components/Calculator';
+import { TodoApp } from '@/components/TodoApp';
 import { useNotes } from '@/hooks/useNotes';
 import { useExport } from '@/hooks/useExport';
 import { NoteCard } from '@/components/NoteCard';
@@ -52,6 +53,7 @@ const VIEW_MODES = [
 
 const TOP_SECTIONS = [
   { id: 'eval',    label: '평가',    icon: Star },
+  { id: 'todo',    label: '일정',    icon: ListTodo },
   { id: 'meal',    label: '식사메뉴', icon: Utensils },
   { id: 'calc',    label: '계산기',  icon: Calculator },
   { id: 'expense', label: '지출',    icon: Wallet },
@@ -123,6 +125,8 @@ function UpdateHistoryBox() {
         </button>
         <p className="text-[10px] font-bold text-slate-700 mb-1 pr-4">[업데이트 내역]</p>
         <ul className="text-[10px] text-slate-500 space-y-0.5 leading-relaxed">
+          <li>• '일정' 탭 추가: 할 일 목록/캘린더 뷰 지원.</li>
+          <li>• 할 일 카테고리 직접 추가·수정·삭제 가능.</li>
           <li>• 카테고리 순서 변경 기능 추가.</li>
           <li>• 하단 '+' 버튼 평가 전용 변경.</li>
           <li>• 수정 화면에서 포스터 삭제 및 나무위키 링크 추가.</li>
@@ -151,6 +155,7 @@ function HomeContent() {
   const [genreManagerOpen, setGenreManagerOpen] = useState(false);
   const [addPickerOpen, setAddPickerOpen] = useState(false);
   const [mealTriggerAdd, setMealTriggerAdd] = useState(false);
+  const [todoTriggerAdd, setTodoTriggerAdd] = useState(false);
   const [topSections, setTopSections] = useState(TOP_SECTIONS);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -215,6 +220,11 @@ function HomeContent() {
     setAddPickerOpen(false);
     setTopSection('meal');
     setMealTriggerAdd(true);
+  }, []);
+  const handlePickTodo = useCallback(() => {
+    setAddPickerOpen(false);
+    setTopSection('todo');
+    setTodoTriggerAdd(true);
   }, []);
   const handleEdit = (note) => { setEditingNote(note); setModalOpen(true); };
   const handleSave = (data) => {
@@ -417,6 +427,13 @@ function HomeContent() {
           />
         )}
 
+        {topSection === 'todo' && (
+          <TodoApp
+            triggerAdd={todoTriggerAdd}
+            onTriggerAddDone={() => setTodoTriggerAdd(false)}
+          />
+        )}
+
         {topSection === 'calc' && <CalculatorView />}
 
         {topSection === 'eval' && viewMode === 'grid' && (
@@ -499,6 +516,19 @@ function HomeContent() {
                   <p className="text-xs text-slate-400">영화·책·애니 등 평가 노트</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+              </button>
+              <button
+                onClick={handlePickTodo}
+                className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl hover:bg-violet-50 text-left transition-colors group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                  <ListTodo className="w-4.5 h-4.5 text-violet-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">할 일 추가</p>
+                  <p className="text-xs text-slate-400">일정 및 To-Do 항목 등록</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-violet-400 transition-colors" />
               </button>
               <button
                 onClick={handlePickMeal}
