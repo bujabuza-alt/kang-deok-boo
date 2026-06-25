@@ -3,13 +3,14 @@
 // components/TodoApp.jsx
 // '일정' 탭 메인 컨테이너.
 // - 목록(Sort) / 캘린더(Calendar) 뷰 전환
-// - 카테고리 필터
+// - 할 일 유형(일일/주간/월간) 필터 + 카테고리 필터
 // - 할 일 추가·수정 / 카테고리 관리 모달
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Plus, Settings2, List, Calendar as CalendarIcon, LayoutList } from 'lucide-react';
 import { useTodos } from '@/hooks/useTodos';
 import { useTodoCategories } from '@/hooks/useTodoCategories';
+import { TODO_TYPES } from '@/lib/todoCategories';
 import { TodoListView } from './TodoListView';
 import { TodoCalendarView } from './TodoCalendarView';
 import { TodoAddEditModal } from './TodoAddEditModal';
@@ -34,6 +35,7 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
 
   const [viewMode, setViewMode] = useState('sort');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
@@ -58,10 +60,26 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
     return counts;
   }, [todos, categories]);
 
+  // 일일·주간·월간 유형별 할 일 개수 (필터 칩에 표시)
+  const typeCounts = useMemo(() => {
+    const counts = { daily: 0, weekly: 0, monthly: 0 };
+    todos.forEach((t) => {
+      const type = t.todoType || 'daily';
+      if (counts[type] !== undefined) counts[type]++;
+    });
+    return counts;
+  }, [todos]);
+
   const filteredTodos = useMemo(() => {
-    if (selectedCategory === 'all') return todos;
-    return todos.filter((t) => t.categoryId === selectedCategory);
-  }, [todos, selectedCategory]);
+    let result = todos;
+    if (selectedType !== 'all') {
+      result = result.filter((t) => (t.todoType || 'daily') === selectedType);
+    }
+    if (selectedCategory !== 'all') {
+      result = result.filter((t) => t.categoryId === selectedCategory);
+    }
+    return result;
+  }, [todos, selectedCategory, selectedType]);
 
   const handleOpenAdd = useCallback((date) => {
     setEditingTodo(date ? { date } : null);
@@ -135,6 +153,46 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
             {label}
           </button>
         ))}
+      </div>
+
+      {/* 할 일 유형 필터 (일일/주간/월간) */}
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+        <button
+          onClick={() => setSelectedType('all')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
+            selectedType === 'all'
+              ? 'bg-slate-800 text-white shadow-md scale-[1.04]'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          전체보기
+        </button>
+        {TODO_TYPES.map((type) => {
+          const active = selectedType === type.id;
+          const count = typeCounts[type.id] || 0;
+          return (
+            <button
+              key={type.id}
+              onClick={() => setSelectedType(type.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
+                active
+                  ? 'bg-indigo-600 text-white shadow-md scale-[1.04]'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'
+              }`}
+            >
+              {type.label}
+              {count > 0 && (
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                    active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* 카테고리 필터 */}

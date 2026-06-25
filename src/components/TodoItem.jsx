@@ -1,10 +1,11 @@
 'use client';
 import { Check, Pencil, Trash2, Clock } from 'lucide-react';
-import { getPriorityById } from '@/lib/todoCategories';
+import { getPriorityById, getTodoTypeById } from '@/lib/todoCategories';
 import { formatDateLabel } from '@/lib/todoDate';
 
 export function TodoItem({ todo, category, onToggle, onEdit, onDelete }) {
   const priority = getPriorityById(todo.priority);
+  const todoType = getTodoTypeById(todo.todoType);
   const done = todo.completed;
 
   return (
@@ -38,30 +39,35 @@ export function TodoItem({ todo, category, onToggle, onEdit, onDelete }) {
         >
           {todo.title}
         </p>
-        {(category || todo.date) && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {category && (
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                  done ? 'bg-slate-100 text-slate-400' : `${category.bg} ${category.text}`
-                }`}
-              >
-                {category.label}
-              </span>
-            )}
-            {todo.date && (
-              <span
-                className={`text-[10px] flex items-center gap-0.5 ${
-                  done ? 'text-slate-300' : 'text-slate-400'
-                }`}
-              >
-                <Clock className="w-2.5 h-2.5" />
-                {formatDateLabel(todo.date)}
-                {todo.time && ` ${todo.time}`}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+              done ? 'bg-slate-100 text-slate-400' : 'bg-violet-50 text-violet-500'
+            }`}
+          >
+            {todoType.label}
+          </span>
+          {category && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                done ? 'bg-slate-100 text-slate-400' : `${category.bg} ${category.text}`
+              }`}
+            >
+              {category.label}
+            </span>
+          )}
+          {todo.date && (
+            <span
+              className={`text-[10px] flex items-center gap-0.5 ${
+                done ? 'text-slate-300' : 'text-slate-400'
+              }`}
+            >
+              <Clock className="w-2.5 h-2.5" />
+              {formatDateLabel(todo.date)}
+              {todo.time && ` ${todo.time}`}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">

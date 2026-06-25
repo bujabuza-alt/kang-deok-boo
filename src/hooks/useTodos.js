@@ -35,6 +35,7 @@ export function useTodos() {
         time: '',
         categoryId: null,
         priority: 'medium',
+        todoType: 'daily', // 일일/주간/월간 중 하나, 기본값은 일일 할일
         ...data,
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         completed: false,

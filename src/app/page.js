@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Plus, Search, SlidersHorizontal, Star, BookOpen,
@@ -58,6 +58,28 @@ const TOP_SECTIONS = [
   { id: 'calc',    label: '계산기',  icon: Calculator },
   { id: 'expense', label: '지출',    icon: Wallet },
 ];
+
+// 상단 탭 순서를 기기에 저장해 다음 방문 시에도 동일한 순서로 보여주기 위한 키.
+const SECTION_ORDER_KEY = 'kang-deok-boo-section-order';
+
+// 저장된 순서(id 배열)를 기준으로 TOP_SECTIONS를 재배열합니다.
+// 새 탭이 추가된 경우를 대비해, 저장된 목록에 없는 항목은 뒤에 그대로 붙입니다.
+function loadSectionOrder() {
+  try {
+    const stored = localStorage.getItem(SECTION_ORDER_KEY);
+    if (stored) {
+      const ids = JSON.parse(stored);
+      if (Array.isArray(ids)) {
+        const ordered = ids.map((id) => TOP_SECTIONS.find((s) => s.id === id)).filter(Boolean);
+        const missing = TOP_SECTIONS.filter((s) => !ids.includes(s.id));
+        return [...ordered, ...missing];
+      }
+    }
+  } catch (e) {
+    console.error('탭 순서 불러오기 실패:', e);
+  }
+  return TOP_SECTIONS;
+}
 
 // ─── 드래그 가능한 탭 아이템 ────────────────────────────────────────────────────
 function SortableTab({ section, isActive, onClick }) {
@@ -130,6 +152,9 @@ function UpdateHistoryBox() {
           <li>• 카테고리 순서 변경 기능 추가.</li>
           <li>• 하단 '+' 버튼 평가 전용 변경.</li>
           <li>• 수정 화면에서 포스터 삭제 및 나무위키 링크 추가.</li>
+          <li>• 헤더 평점 요약 정보, '평가' 탭에서만 노출.</li>
+          <li>• 탭 순서 변경 시 기기에 저장되어 재방문 시에도 유지.</li>
+          <li>• 할 일을 일일·주간·월간 유형으로 구분해 관리.</li>
         </ul>
       </div>
     </div>
@@ -158,13 +183,28 @@ function HomeContent() {
   const [todoTriggerAdd, setTodoTriggerAdd] = useState(false);
   const [topSections, setTopSections] = useState(TOP_SECTIONS);
 
+  // 최초 마운트 시 저장된 탭 순서를 불러옵니다 (localStorage는 클라이언트에서만 접근 가능).
+  useEffect(() => {
+    setTopSections(loadSectionOrder());
+  }, []);
+
+  const persistSectionOrder = useCallback((sections) => {
+    try {
+      localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(sections.map((s) => s.id)));
+    } catch (e) {
+      console.error('탭 순서 저장 실패:', e);
+    }
+  }, []);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const handleSectionDragEnd = ({ active, over }) => {
     if (over && active.id !== over.id) {
       setTopSections((prev) => {
         const oldIndex = prev.findIndex((s) => s.id === active.id);
         const newIndex = prev.findIndex((s) => s.id === over.id);
-        return arrayMove(prev, oldIndex, newIndex);
+        const next = arrayMove(prev, oldIndex, newIndex);
+        persistSectionOrder(next);
+        return next;
       });
     }
   };
@@ -261,7 +301,8 @@ function HomeContent() {
                 <BookOpen className="w-6 h-6 text-indigo-600 shrink-0" />
                 강덕부
               </h1>
-              {notes.length > 0 && (
+              {/* 평점 요약 정보는 '평가' 탭 데이터이므로 해당 탭에서만 노출합니다. */}
+              {topSection === 'eval' && notes.length > 0 && (
                 <p className="text-xs text-slate-400 mt-0.5">
                   총 {notes.length}개 기록 · 평균{' '}
                   <Star className="w-3 h-3 inline fill-amber-400 text-amber-400" /> {avgRating}
@@ -468,14 +509,16 @@ function HomeContent() {
         )}
       </main>
 
-      {/* ─── FAB (모바일) ─────────────────────────────────────────────────── */}
-      <button
-        onClick={() => { setEditingNote(null); setModalOpen(true); }}
-        className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center z-30"
-        aria-label="새 평가 추가"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* ─── FAB (모바일, '평가' 탭에서만 노출) ──────────────────────────────── */}
+      {topSection === 'eval' && (
+        <button
+          onClick={() => { setEditingNote(null); setModalOpen(true); }}
+          className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center z-30"
+          aria-label="새 평가 추가"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
 
       {/* ─── 노트 추가·편집 모달 ──────────────────────────────────────────── */}
       {modalOpen && (
