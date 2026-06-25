@@ -25,3 +25,17 @@ export const PRIORITY_LEVELS = [
 export function getPriorityById(id) {
   return PRIORITY_LEVELS.find((p) => p.id === id) || PRIORITY_LEVELS[1];
 }
+
+/**
+ * 할 일 주기 유형. 카테고리(업무/개인 등)와는 별개의 분류 기준으로,
+ * 일일·주간·월간 3단계 고정값입니다.
+ */
+export const TODO_TYPES = [
+  { id: 'daily', label: '일일 할일' },
+  { id: 'weekly', label: '주간 할일' },
+  { id: 'monthly', label: '월간 할일' },
+];
+
+export function getTodoTypeById(id) {
+  return TODO_TYPES.find((t) => t.id === id) || TODO_TYPES[0];
+}

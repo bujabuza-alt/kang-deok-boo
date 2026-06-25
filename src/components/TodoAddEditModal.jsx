@@ -5,7 +5,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { PRIORITY_LEVELS } from '@/lib/todoCategories';
+import { PRIORITY_LEVELS, TODO_TYPES } from '@/lib/todoCategories';
 
 const makeDefaultForm = (firstCategoryId, date) => ({
   title: '',
@@ -13,6 +13,7 @@ const makeDefaultForm = (firstCategoryId, date) => ({
   time: '',
   categoryId: firstCategoryId || null,
   priority: 'medium',
+  todoType: 'daily',
   memo: '',
 });
 
@@ -28,6 +29,7 @@ export function TodoAddEditModal({ todo, categories, onSave, onClose }) {
         time: todo.time || '',
         categoryId: todo.categoryId || firstCategoryId,
         priority: todo.priority || 'medium',
+        todoType: todo.todoType || 'daily',
         memo: todo.memo || '',
       });
     } else {
@@ -151,6 +153,30 @@ export function TodoAddEditModal({ todo, categories, onSave, onClose }) {
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
                     {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 할 일 유형 (일일/주간/월간) */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">할 일 유형</label>
+            <div className="flex gap-2">
+              {TODO_TYPES.map((t) => {
+                const isSelected = form.todoType === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => set('todoType', t.id)}
+                    className={`flex-1 py-2 rounded-xl border-2 text-xs font-medium transition-all duration-150 ${
+                      isSelected
+                        ? 'bg-indigo-50 text-indigo-600 border-indigo-500'
+                        : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {t.label}
                   </button>
                 );
               })}
