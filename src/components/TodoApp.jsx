@@ -21,6 +21,9 @@ const VIEW_MODES = [
   { id: 'calendar', label: '캘린더', icon: CalendarIcon },
 ];
 
+// 마지막으로 선택한 카테고리 필터를 저장해 다음 실행 시 기본값으로 사용하기 위한 키.
+const LAST_CATEGORY_KEY = 'kang-deok-boo-todo-last-category';
+
 export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
   const { todos, loaded: todosLoaded, addTodo, updateTodo, deleteTodo, toggleTodo } = useTodos();
   const {
@@ -50,6 +53,25 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
     }
     prevTriggerAdd.current = triggerAdd;
   }, [triggerAdd, onTriggerAddDone]);
+
+  // 최초 마운트 시 마지막으로 선택했던 카테고리를 불러와 기본값으로 사용합니다.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LAST_CATEGORY_KEY);
+      if (stored) setSelectedCategory(stored);
+    } catch (e) {
+      console.error('마지막 선택 카테고리 불러오기 실패:', e);
+    }
+  }, []);
+
+  const handleSelectCategory = useCallback((categoryId) => {
+    setSelectedCategory(categoryId);
+    try {
+      localStorage.setItem(LAST_CATEGORY_KEY, categoryId);
+    } catch (e) {
+      console.error('마지막 선택 카테고리 저장 실패:', e);
+    }
+  }, []);
 
   const categoryCounts = useMemo(() => {
     const counts = {};
@@ -198,7 +220,7 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
       {/* 카테고리 필터 */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
         <button
-          onClick={() => setSelectedCategory('all')}
+          onClick={() => handleSelectCategory('all')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
             selectedCategory === 'all'
               ? 'bg-indigo-600 text-white shadow-md scale-[1.04]'
@@ -214,7 +236,7 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
           return (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => handleSelectCategory(cat.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                 active
                   ? `${cat.activeBg} ${cat.activeText} shadow-md scale-[1.04]`

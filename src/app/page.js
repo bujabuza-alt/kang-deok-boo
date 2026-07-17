@@ -62,6 +62,9 @@ const TOP_SECTIONS = [
 // 상단 탭 순서를 기기에 저장해 다음 방문 시에도 동일한 순서로 보여주기 위한 키.
 const SECTION_ORDER_KEY = 'kang-deok-boo-section-order';
 
+// 마지막으로 선택한 장르(카테고리) 필터를 저장해 다음 실행 시 기본값으로 사용하기 위한 키.
+const LAST_GENRE_KEY = 'kang-deok-boo-last-genre';
+
 // 저장된 순서(id 배열)를 기준으로 TOP_SECTIONS를 재배열합니다.
 // 새 탭이 추가된 경우를 대비해, 저장된 목록에 없는 항목은 뒤에 그대로 붙입니다.
 function loadSectionOrder() {
@@ -183,9 +186,24 @@ function HomeContent() {
   const [todoTriggerAdd, setTodoTriggerAdd] = useState(false);
   const [topSections, setTopSections] = useState(TOP_SECTIONS);
 
-  // 최초 마운트 시 저장된 탭 순서를 불러옵니다 (localStorage는 클라이언트에서만 접근 가능).
+  // 최초 마운트 시 저장된 탭 순서와 마지막 선택 장르를 불러옵니다 (localStorage는 클라이언트에서만 접근 가능).
   useEffect(() => {
     setTopSections(loadSectionOrder());
+    try {
+      const storedGenre = localStorage.getItem(LAST_GENRE_KEY);
+      if (storedGenre) setSelectedGenre(storedGenre);
+    } catch (e) {
+      console.error('마지막 선택 장르 불러오기 실패:', e);
+    }
+  }, []);
+
+  const handleSelectGenre = useCallback((genreId) => {
+    setSelectedGenre(genreId);
+    try {
+      localStorage.setItem(LAST_GENRE_KEY, genreId);
+    } catch (e) {
+      console.error('마지막 선택 장르 저장 실패:', e);
+    }
   }, []);
 
   const persistSectionOrder = useCallback((sections) => {
@@ -452,7 +470,7 @@ function HomeContent() {
           {topSection === 'eval' && (viewMode === 'grid' || viewMode === 'timeline') && (
             <CategoryFilter
               selected={selectedGenre}
-              onSelect={setSelectedGenre}
+              onSelect={handleSelectGenre}
               counts={genreCounts}
             />
           )}
