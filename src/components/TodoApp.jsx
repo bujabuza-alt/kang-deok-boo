@@ -15,6 +15,7 @@ import { TodoListView } from './TodoListView';
 import { TodoCalendarView } from './TodoCalendarView';
 import { TodoAddEditModal } from './TodoAddEditModal';
 import { TodoCategoryManager } from './TodoCategoryManager';
+import { useTheme } from '@/expense/context/ThemeContext';
 
 const VIEW_MODES = [
   { id: 'sort', label: '목록', icon: List },
@@ -25,6 +26,8 @@ const VIEW_MODES = [
 const LAST_CATEGORY_KEY = 'kang-deok-boo-todo-last-category';
 
 export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
+  const { theme } = useTheme();
+  const lm = theme === 'light';
   const { todos, loaded: todosLoaded, addTodo, updateTodo, deleteTodo, toggleTodo } = useTodos();
   const {
     categories,
@@ -140,14 +143,14 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
     <div className="max-w-3xl mx-auto w-full px-4 py-4">
       {/* 헤더: 진행 현황 + 카테고리 관리 + 추가 */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">
-          진행 중 <span className="font-bold text-indigo-600">{incompleteCount}</span>개 · 전체 {todos.length}개
+        <p className={`text-sm ${lm ? 'text-slate-500' : 'text-gray-500'}`}>
+          진행 중 <span className={`font-bold ${lm ? 'text-indigo-600' : 'text-violet-400'}`}>{incompleteCount}</span>개 · 전체 {todos.length}개
         </p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCategoryManagerOpen(true)}
             title="카테고리 관리"
-            className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+            className={`p-2 rounded-xl border transition-colors ${lm ? 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200' : 'border-gray-800 text-gray-400 hover:bg-gray-900 hover:text-violet-400'}`}
           >
             <Settings2 className="w-4 h-4" />
           </button>
@@ -162,13 +165,15 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
       </div>
 
       {/* 뷰 모드 전환 */}
-      <div className="inline-flex gap-1 p-0.5 bg-slate-100 rounded-xl mb-3">
+      <div className={`inline-flex gap-1 p-0.5 rounded-xl mb-3 ${lm ? 'bg-slate-100' : 'bg-gray-800'}`}>
         {VIEW_MODES.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setViewMode(id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-150 ${
-              viewMode === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              viewMode === id
+                ? lm ? 'bg-white text-indigo-600 shadow-sm' : 'bg-gray-900 text-violet-400 shadow-sm'
+                : lm ? 'text-slate-500 hover:text-slate-700' : 'text-gray-500 hover:text-gray-300'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -183,8 +188,8 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
           onClick={() => setSelectedType('all')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
             selectedType === 'all'
-              ? 'bg-slate-800 text-white shadow-md scale-[1.04]'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              ? lm ? 'bg-slate-800 text-white shadow-md scale-[1.04]' : 'bg-gray-100 text-gray-900 shadow-md scale-[1.04]'
+              : lm ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800'
           }`}
         >
           전체보기
@@ -198,15 +203,17 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
               onClick={() => setSelectedType(type.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                 active
-                  ? 'bg-indigo-600 text-white shadow-md scale-[1.04]'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'
+                  ? lm ? 'bg-indigo-600 text-white shadow-md scale-[1.04]' : 'bg-violet-600 text-white shadow-md scale-[1.04]'
+                  : lm
+                    ? 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'
+                    : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-violet-950/30 hover:border-violet-800 hover:text-violet-400'
               }`}
             >
               {type.label}
               {count > 0 && (
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                    active ? 'bg-white/25 text-white' : lm ? 'bg-slate-100 text-slate-500' : 'bg-gray-800 text-gray-500'
                   }`}
                 >
                   {count}
@@ -223,8 +230,10 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
           onClick={() => handleSelectCategory('all')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
             selectedCategory === 'all'
-              ? 'bg-indigo-600 text-white shadow-md scale-[1.04]'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'
+              ? lm ? 'bg-indigo-600 text-white shadow-md scale-[1.04]' : 'bg-violet-600 text-white shadow-md scale-[1.04]'
+              : lm
+                ? 'bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600'
+                : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-violet-950/30 hover:border-violet-800 hover:text-violet-400'
           }`}
         >
           <LayoutList className="w-3.5 h-3.5" />
@@ -240,7 +249,7 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                 active
                   ? `${cat.activeBg} ${cat.activeText} shadow-md scale-[1.04]`
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                  : lm ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' : 'bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${active ? 'bg-white/70' : cat.dot}`} />
@@ -248,7 +257,7 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
               {count > 0 && (
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                    active ? 'bg-white/25 text-white' : lm ? 'bg-slate-100 text-slate-500' : 'bg-gray-800 text-gray-500'
                   }`}
                 >
                   {count}
@@ -310,13 +319,13 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
           onClick={(e) => e.target === e.currentTarget && setDeleteConfirm(null)}
         >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">할 일 삭제</h3>
-            <p className="text-sm text-slate-500 mb-6">이 할 일을 삭제할까요? 되돌릴 수 없어요.</p>
+          <div className={`relative rounded-2xl shadow-2xl p-6 max-w-sm w-full ${lm ? 'bg-white' : 'bg-gray-900'}`}>
+            <h3 className={`text-lg font-bold mb-2 ${lm ? 'text-slate-800' : 'text-white'}`}>할 일 삭제</h3>
+            <p className={`text-sm mb-6 ${lm ? 'text-slate-500' : 'text-gray-400'}`}>이 할 일을 삭제할까요? 되돌릴 수 없어요.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors"
+                className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${lm ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-gray-700 text-gray-300 hover:bg-gray-800'}`}
               >
                 취소
               </button>

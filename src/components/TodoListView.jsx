@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { ListChecks } from 'lucide-react';
 import { TodoItem } from './TodoItem';
+import { useTheme } from '@/expense/context/ThemeContext';
 
 // 날짜 없는 일정은 정렬 시 항상 맨 뒤로 보냅니다.
 function dateTimeKey(todo) {
@@ -10,6 +11,9 @@ function dateTimeKey(todo) {
 }
 
 export function TodoListView({ todos, getCategoryById, onToggle, onEdit, onDelete }) {
+  const { theme } = useTheme();
+  const lm = theme === 'light';
+
   const { incomplete, completed } = useMemo(() => {
     const incomplete = todos
       .filter((t) => !t.completed)
@@ -23,8 +27,8 @@ export function TodoListView({ todos, getCategoryById, onToggle, onEdit, onDelet
   if (todos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <ListChecks className="w-10 h-10 text-slate-200 mb-3" />
-        <p className="text-sm text-slate-400">아직 등록된 할 일이 없어요</p>
+        <ListChecks className={`w-10 h-10 mb-3 ${lm ? 'text-slate-200' : 'text-gray-700'}`} />
+        <p className={`text-sm ${lm ? 'text-slate-400' : 'text-gray-500'}`}>아직 등록된 할 일이 없어요</p>
       </div>
     );
   }
@@ -33,7 +37,7 @@ export function TodoListView({ todos, getCategoryById, onToggle, onEdit, onDelet
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         {incomplete.length === 0 ? (
-          <p className="text-xs text-slate-400 py-2">진행 중인 할 일이 없어요 🎉</p>
+          <p className={`text-xs py-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>진행 중인 할 일이 없어요 🎉</p>
         ) : (
           incomplete.map((todo) => (
             <TodoItem
@@ -49,8 +53,8 @@ export function TodoListView({ todos, getCategoryById, onToggle, onEdit, onDelet
       </div>
 
       {completed.length > 0 && (
-        <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
-          <p className="text-xs font-semibold text-slate-400 px-1">완료됨 ({completed.length})</p>
+        <div className={`flex flex-col gap-2 pt-3 border-t ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
+          <p className={`text-xs font-semibold px-1 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>완료됨 ({completed.length})</p>
           {completed.map((todo) => (
             <TodoItem
               key={todo.id}
