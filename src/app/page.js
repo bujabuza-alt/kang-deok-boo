@@ -1,7 +1,7 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { BookOpen, Utensils, Wallet, GripVertical, ListTodo } from 'lucide-react';
+import { BookOpen, Utensils, Wallet, GripVertical, ListTodo, Bell, StickyNote, Settings } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -18,11 +18,19 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { MealMenu } from '@/components/MealMenu';
 import { TodoApp } from '@/components/TodoApp';
+import { ReminderCenter } from '@/components/ReminderCenter';
+import { MemoApp } from '@/components/MemoApp';
+import { SettingsPanel } from '@/components/SettingsPanel';
+import { useReminders } from '@/hooks/useReminders';
+import { useTheme } from '@/expense/context/ThemeContext';
 
 const TOP_SECTIONS = [
-  { id: 'todo',    label: '일정',    icon: ListTodo },
-  { id: 'meal',    label: '식사메뉴', icon: Utensils },
-  { id: 'expense', label: '지출',    icon: Wallet },
+  { id: 'todo',      label: '일정',    icon: ListTodo },
+  { id: 'meal',      label: '식사메뉴', icon: Utensils },
+  { id: 'expense',   label: '지출',    icon: Wallet },
+  { id: 'reminders', label: '알림',    icon: Bell },
+  { id: 'memo',      label: '메모',    icon: StickyNote },
+  { id: 'settings',  label: '설정',    icon: Settings },
 ];
 
 // 상단 탭 순서를 기기에 저장해 다음 방문 시에도 동일한 순서로 보여주기 위한 키.
@@ -47,8 +55,13 @@ function loadSectionOrder() {
   return TOP_SECTIONS;
 }
 
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // ─── 드래그 가능한 탭 아이템 ────────────────────────────────────────────────────
-function SortableTab({ section, isActive, onClick }) {
+function SortableTab({ section, isActive, lm, onClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const Icon = section.icon;
@@ -57,7 +70,7 @@ function SortableTab({ section, isActive, onClick }) {
     <span
       {...listeners}
       {...attributes}
-      className="p-1 cursor-grab active:cursor-grabbing touch-none text-slate-300 hover:text-slate-400 shrink-0"
+      className={`p-1 cursor-grab active:cursor-grabbing touch-none shrink-0 ${lm ? 'text-slate-300 hover:text-slate-400' : 'text-gray-700 hover:text-gray-500'}`}
       aria-label="탭 순서 변경"
     >
       <GripVertical className="w-3 h-3" />
@@ -70,7 +83,7 @@ function SortableTab({ section, isActive, onClick }) {
         {grip}
         <Link
           href="/expense"
-          className="flex items-center gap-1 px-2 py-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all duration-150 -mb-px"
+          className={`flex items-center gap-1 px-2 py-2 text-sm font-semibold border-b-2 border-transparent transition-all duration-150 -mb-px ${lm ? 'text-slate-500 hover:text-slate-700' : 'text-gray-400 hover:text-gray-200'}`}
         >
           <Icon className="w-3.5 h-3.5" />
           {section.label}
@@ -87,7 +100,7 @@ function SortableTab({ section, isActive, onClick }) {
         className={`flex items-center gap-1 px-2 py-2 text-sm font-semibold border-b-2 transition-all duration-150 -mb-px ${
           isActive
             ? 'border-indigo-600 text-indigo-600'
-            : 'border-transparent text-slate-500 hover:text-slate-700'
+            : lm ? 'border-transparent text-slate-500 hover:text-slate-700' : 'border-transparent text-gray-400 hover:text-gray-200'
         }`}
       >
         <Icon className="w-3.5 h-3.5" />
@@ -98,8 +111,12 @@ function SortableTab({ section, isActive, onClick }) {
 }
 
 export default function HomePage() {
+  const { theme } = useTheme();
+  const lm = theme === 'light';
+
   const [topSection, setTopSection] = useState('todo');
   const [topSections, setTopSections] = useState(TOP_SECTIONS);
+  const { reminders, loaded: remindersLoaded, addReminder, updateReminder, deleteReminder, toggleReminder } = useReminders();
 
   // 최초 마운트 시 저장된 탭 순서를 불러옵니다 (localStorage는 클라이언트에서만 접근 가능).
   useEffect(() => {
@@ -127,18 +144,37 @@ export default function HomePage() {
     }
   };
 
+  // 헤더 알림 배지: 오늘 마감이거나 지난, 아직 완료하지 않은 독립 리마인더 개수.
+  const dueReminderCount = useMemo(() => {
+    if (!remindersLoaded) return 0;
+    const today = todayStr();
+    return reminders.filter((r) => !r.done && r.datetime && r.datetime.slice(0, 10) <= today).length;
+  }, [reminders, remindersLoaded]);
+
   return (
-    <div className="min-h-dvh bg-slate-50 flex flex-col">
+    <div className={`min-h-dvh flex flex-col ${lm ? 'bg-slate-50' : 'bg-gray-950'}`}>
       {/* ─── 헤더 ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-100">
+      <header className={`sticky top-0 z-30 backdrop-blur border-b ${lm ? 'bg-white/90 border-slate-100' : 'bg-gray-950/90 border-gray-800'}`}>
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <h1 className={`text-xl font-bold flex items-center gap-2 ${lm ? 'text-slate-900' : 'text-white'}`}>
                 <BookOpen className="w-6 h-6 text-indigo-600 shrink-0" />
                 강덕부
               </h1>
             </div>
+            <button
+              onClick={() => setTopSection('reminders')}
+              aria-label="알림"
+              className={`relative p-2 rounded-xl border transition-colors shrink-0 ${lm ? 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600' : 'border-gray-800 text-gray-400 hover:bg-gray-900 hover:text-violet-400'}`}
+            >
+              <Bell className="w-4 h-4" />
+              {dueReminderCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {dueReminderCount > 9 ? '9+' : dueReminderCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -146,12 +182,13 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto px-4 pb-3 flex flex-col gap-2">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
             <SortableContext items={topSections.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
-              <div className="flex gap-0 border-b border-slate-100 overflow-x-auto">
+              <div className={`flex gap-0 border-b overflow-x-auto ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
                 {topSections.map((section) => (
                   <SortableTab
                     key={section.id}
                     section={section}
                     isActive={topSection === section.id}
+                    lm={lm}
                     onClick={() => setTopSection(section.id)}
                   />
                 ))}
@@ -166,6 +203,21 @@ export default function HomePage() {
         {topSection === 'meal' && <MealMenu />}
 
         {topSection === 'todo' && <TodoApp />}
+
+        {topSection === 'reminders' && (
+          <ReminderCenter
+            reminders={reminders}
+            loaded={remindersLoaded}
+            addReminder={addReminder}
+            updateReminder={updateReminder}
+            deleteReminder={deleteReminder}
+            toggleReminder={toggleReminder}
+          />
+        )}
+
+        {topSection === 'memo' && <MemoApp />}
+
+        {topSection === 'settings' && <SettingsPanel />}
       </main>
     </div>
   );
