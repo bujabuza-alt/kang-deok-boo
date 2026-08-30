@@ -16,6 +16,9 @@ const BACKUP_KEYS = [
   { key: 'kang-deok-boo-todo-categories', fallback: null },
   { key: 'kang-deok-boo-memos', fallback: [] },
   { key: 'kang-deok-boo-reminders', fallback: [] },
+  { key: 'kang-deok-boo-wishlist', fallback: [] },
+  { key: 'kang-deok-boo-habits', fallback: [] },
+  { key: 'kang-deok-boo-habit-checkins', fallback: {} },
   { key: 'kang-deok-boo-section-order', fallback: null },
   { key: 'et_expenses', fallback: [] },
   { key: 'et_budget', fallback: 500000 },
@@ -110,7 +113,7 @@ export function SettingsPanel() {
           <DatabaseBackup className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
           <h3 className={h3Cls(lm)}>데이터 관리</h3>
         </div>
-        <p className={mutedCls(lm)}>일정·메모·알림·지출을 포함한 앱 전체 데이터를 한 번에 백업하거나 복원합니다.</p>
+        <p className={mutedCls(lm)}>일정·메모·알림·위시리스트·습관·지출을 포함한 앱 전체 데이터를 한 번에 백업하거나 복원합니다.</p>
         <div className="flex gap-2">
           <button
             onClick={doFullExport}

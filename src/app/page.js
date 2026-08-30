@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { BookOpen, Utensils, Wallet, GripVertical, ListTodo, Bell, StickyNote, Settings } from 'lucide-react';
+import { BookOpen, Utensils, Wallet, GripVertical, ListTodo, Bell, StickyNote, Settings, ShoppingBag, Flame } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -20,6 +20,8 @@ import { MealMenu } from '@/components/MealMenu';
 import { TodoApp } from '@/components/TodoApp';
 import { ReminderCenter } from '@/components/ReminderCenter';
 import { MemoApp } from '@/components/MemoApp';
+import { WishlistApp } from '@/components/WishlistApp';
+import { HabitTracker } from '@/components/HabitTracker';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { useReminders } from '@/hooks/useReminders';
 import { useTheme } from '@/expense/context/ThemeContext';
@@ -30,6 +32,8 @@ const TOP_SECTIONS = [
   { id: 'expense',   label: '지출',    icon: Wallet },
   { id: 'reminders', label: '알림',    icon: Bell },
   { id: 'memo',      label: '메모',    icon: StickyNote },
+  { id: 'wishlist',  label: '위시리스트', icon: ShoppingBag },
+  { id: 'habits',    label: '습관',    icon: Flame },
   { id: 'settings',  label: '설정',    icon: Settings },
 ];
 
@@ -216,6 +220,10 @@ export default function HomePage() {
         )}
 
         {topSection === 'memo' && <MemoApp />}
+
+        {topSection === 'wishlist' && <WishlistApp />}
+
+        {topSection === 'habits' && <HabitTracker />}
 
         {topSection === 'settings' && <SettingsPanel />}
       </main>
