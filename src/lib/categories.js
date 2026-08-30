@@ -1,7 +1,6 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/categories.js
 // 기본 장르(DEFAULT_GENRES) 정의 및 색상 프리셋(COLOR_PRESETS) 제공.
-// 실제로 앱에서 사용되는 장르 목록은 useGenres 훅이 localStorage를 통해 관리합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -147,7 +146,6 @@ export const CATEGORIES = DEFAULT_GENRES;
 
 /**
  * id로 장르를 찾아 반환합니다. 없으면 마지막 장르(기타)를 반환합니다.
- * 동적 장르를 사용할 때는 useGenres().getGenreById()를 사용하세요.
  */
 export function getCategoryById(id) {
   return DEFAULT_GENRES.find((c) => c.id === id) || DEFAULT_GENRES[DEFAULT_GENRES.length - 1];

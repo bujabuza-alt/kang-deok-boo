@@ -7,7 +7,7 @@ const buildId = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
 
 export const metadata = {
   title: '강덕부',
-  description: '좋아하는 모든 것을 기록하고 평가하는 노트',
+  description: '일정과 식사메뉴, 지출을 기록하고 관리하는 앱',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
