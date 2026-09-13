@@ -5,6 +5,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const STORAGE_KEY = 'kang-deok-boo-memos';
 
@@ -12,15 +13,21 @@ export function useMemos() {
   const [memos, setMemos] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setMemos(JSON.parse(stored));
+      setMemos(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load memos:', e);
     }
-    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    reload();
+    setLoaded(true);
+  }, [reload]);
+
+  useSyncListener(STORAGE_KEY, reload);
 
   const persist = useCallback((next) => {
     setMemos(next);

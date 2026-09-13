@@ -5,7 +5,7 @@
 // 앱이 동기화 없이 로컬 전용으로 정상 동작하도록 합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore/lite';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

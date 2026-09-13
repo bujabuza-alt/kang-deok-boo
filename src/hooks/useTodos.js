@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const STORAGE_KEY = 'kang-deok-boo-todos';
 
@@ -8,15 +9,22 @@ export function useTodos() {
   const [todos, setTodos] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setTodos(JSON.parse(stored));
+      setTodos(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load todos:', e);
     }
-    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    reload();
+    setLoaded(true);
+  }, [reload]);
+
+  // 다른 기기에서 동기화로 값이 바뀌면 즉시 반영합니다.
+  useSyncListener(STORAGE_KEY, reload);
 
   const persist = useCallback((nextTodos) => {
     setTodos(nextTodos);

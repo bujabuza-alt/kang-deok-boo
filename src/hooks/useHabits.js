@@ -5,6 +5,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const HABITS_KEY = 'kang-deok-boo-habits';
 const CHECKINS_KEY = 'kang-deok-boo-habit-checkins';
@@ -19,17 +20,32 @@ export function useHabits() {
   const [checkins, setCheckins] = useState({});
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const reloadHabits = useCallback(() => {
     try {
-      const storedHabits = localStorage.getItem(HABITS_KEY);
-      if (storedHabits) setHabits(JSON.parse(storedHabits));
-      const storedCheckins = localStorage.getItem(CHECKINS_KEY);
-      if (storedCheckins) setCheckins(JSON.parse(storedCheckins));
+      const stored = localStorage.getItem(HABITS_KEY);
+      setHabits(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load habits:', e);
     }
-    setLoaded(true);
   }, []);
+
+  const reloadCheckins = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(CHECKINS_KEY);
+      setCheckins(stored ? JSON.parse(stored) : {});
+    } catch (e) {
+      console.error('Failed to load habit checkins:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    reloadHabits();
+    reloadCheckins();
+    setLoaded(true);
+  }, [reloadHabits, reloadCheckins]);
+
+  useSyncListener(HABITS_KEY, reloadHabits);
+  useSyncListener(CHECKINS_KEY, reloadCheckins);
 
   const persistHabits = useCallback((next) => {
     setHabits(next);
