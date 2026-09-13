@@ -4,6 +4,7 @@
 // '위시리스트' 탭의 쇼핑 위시리스트 항목을 localStorage에 저장하고 CRUD를 제공합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
+import { pushKey } from '@/lib/sync';
 
 const STORAGE_KEY = 'kang-deok-boo-wishlist';
 
@@ -24,7 +25,9 @@ export function useWishlist() {
   const persist = useCallback((next) => {
     setItems(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const json = JSON.stringify(next);
+      localStorage.setItem(STORAGE_KEY, json);
+      pushKey(STORAGE_KEY, json);
     } catch (e) {
       console.error('Failed to save wishlist:', e);
     }

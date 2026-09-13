@@ -5,6 +5,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_TODO_CATEGORIES } from '@/lib/todoCategories';
+import { pushKey } from '@/lib/sync';
 
 const STORAGE_KEY = 'kang-deok-boo-todo-categories';
 
@@ -28,7 +29,9 @@ export function useTodoCategories() {
   const persist = useCallback((nextCategories) => {
     setCategories(nextCategories);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextCategories));
+      const json = JSON.stringify(nextCategories);
+      localStorage.setItem(STORAGE_KEY, json);
+      pushKey(STORAGE_KEY, json);
     } catch (e) {
       console.error('할 일 카테고리 저장 실패:', e);
     }

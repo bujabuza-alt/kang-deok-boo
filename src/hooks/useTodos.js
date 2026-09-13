@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { pushKey } from '@/lib/sync';
 
 const STORAGE_KEY = 'kang-deok-boo-todos';
 
@@ -20,7 +21,9 @@ export function useTodos() {
   const persist = useCallback((nextTodos) => {
     setTodos(nextTodos);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTodos));
+      const json = JSON.stringify(nextTodos);
+      localStorage.setItem(STORAGE_KEY, json);
+      pushKey(STORAGE_KEY, json);
     } catch (e) {
       console.error('Failed to save todos:', e);
     }

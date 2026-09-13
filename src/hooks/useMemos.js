@@ -4,6 +4,7 @@
 // '메모' 탭의 메모(체크리스트 포함) 목록을 localStorage에 저장하고 CRUD를 제공합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
+import { pushKey } from '@/lib/sync';
 
 const STORAGE_KEY = 'kang-deok-boo-memos';
 
@@ -24,7 +25,9 @@ export function useMemos() {
   const persist = useCallback((next) => {
     setMemos(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const json = JSON.stringify(next);
+      localStorage.setItem(STORAGE_KEY, json);
+      pushKey(STORAGE_KEY, json);
     } catch (e) {
       console.error('Failed to save memos:', e);
     }

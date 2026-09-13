@@ -4,6 +4,7 @@
 // '습관' 탭의 습관 목록 + 날짜별 체크 기록을 localStorage에 저장하고 CRUD를 제공합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
+import { pushKey } from '@/lib/sync';
 
 const HABITS_KEY = 'kang-deok-boo-habits';
 const CHECKINS_KEY = 'kang-deok-boo-habit-checkins';
@@ -33,7 +34,9 @@ export function useHabits() {
   const persistHabits = useCallback((next) => {
     setHabits(next);
     try {
-      localStorage.setItem(HABITS_KEY, JSON.stringify(next));
+      const json = JSON.stringify(next);
+      localStorage.setItem(HABITS_KEY, json);
+      pushKey(HABITS_KEY, json);
     } catch (e) {
       console.error('Failed to save habits:', e);
     }
@@ -42,7 +45,9 @@ export function useHabits() {
   const persistCheckins = useCallback((next) => {
     setCheckins(next);
     try {
-      localStorage.setItem(CHECKINS_KEY, JSON.stringify(next));
+      const json = JSON.stringify(next);
+      localStorage.setItem(CHECKINS_KEY, json);
+      pushKey(CHECKINS_KEY, json);
     } catch (e) {
       console.error('Failed to save habit checkins:', e);
     }

@@ -1,3 +1,5 @@
+import { pushKey } from '@/lib/sync';
+
 const _toDateStr = (d) => {
   const y   = d.getFullYear();
   const m   = String(d.getMonth() + 1).padStart(2, '0');
@@ -55,7 +57,9 @@ export const ls = {
   },
   set: (key, value) => {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      const json = JSON.stringify(value);
+      localStorage.setItem(key, json);
+      pushKey(key, json);
     } catch { /* 무시 */ }
   },
 };
