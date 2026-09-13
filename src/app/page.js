@@ -25,6 +25,7 @@ import { HabitTracker } from '@/components/HabitTracker';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { useReminders } from '@/hooks/useReminders';
 import { useTheme } from '@/expense/context/ThemeContext';
+import { pushKey } from '@/lib/sync';
 
 const TOP_SECTIONS = [
   { id: 'todo',      label: '일정',    icon: ListTodo },
@@ -129,7 +130,9 @@ export default function HomePage() {
 
   const persistSectionOrder = useCallback((sections) => {
     try {
-      localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(sections.map((s) => s.id)));
+      const json = JSON.stringify(sections.map((s) => s.id));
+      localStorage.setItem(SECTION_ORDER_KEY, json);
+      pushKey(SECTION_ORDER_KEY, json);
     } catch (e) {
       console.error('탭 순서 저장 실패:', e);
     }

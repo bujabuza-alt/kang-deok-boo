@@ -9,23 +9,11 @@ import { useState } from 'react';
 import { DatabaseBackup, Download, Upload, RotateCcw, Sun, Moon, Info } from 'lucide-react';
 import { useTheme } from '@/expense/context/ThemeContext';
 import { ls, exportJSON } from '@/expense/utils';
+import { SYNC_KEYS } from '@/lib/syncKeys';
+import { SyncSettings } from '@/components/SyncSettings';
 
-// 앱 전체에서 localStorage에 저장하는 키 목록. 새 모듈을 추가하면 여기에도 등록합니다.
-const BACKUP_KEYS = [
-  { key: 'kang-deok-boo-todos', fallback: [] },
-  { key: 'kang-deok-boo-todo-categories', fallback: null },
-  { key: 'kang-deok-boo-memos', fallback: [] },
-  { key: 'kang-deok-boo-reminders', fallback: [] },
-  { key: 'kang-deok-boo-wishlist', fallback: [] },
-  { key: 'kang-deok-boo-habits', fallback: [] },
-  { key: 'kang-deok-boo-habit-checkins', fallback: {} },
-  { key: 'kang-deok-boo-section-order', fallback: null },
-  { key: 'et_expenses', fallback: [] },
-  { key: 'et_budget', fallback: 500000 },
-  { key: 'et_payment_methods', fallback: null },
-  { key: 'et_presets', fallback: null },
-  { key: 'et_categories', fallback: null },
-];
+// 앱 전체에서 localStorage에 저장하는 키 목록 (동기화 대상과 동일).
+const BACKUP_KEYS = SYNC_KEYS;
 
 const SECTION_ORDER_KEY = 'kang-deok-boo-section-order';
 
@@ -107,6 +95,8 @@ export function SettingsPanel() {
           ))}
         </div>
       </section>
+
+      <SyncSettings lm={lm} sectionCls={sectionCls} h3Cls={h3Cls} mutedCls={mutedCls} />
 
       <section className={sectionCls(lm)}>
         <div className="flex items-center gap-2">

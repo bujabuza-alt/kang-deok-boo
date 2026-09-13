@@ -5,6 +5,7 @@
 // 인앱 전용 리마인더입니다 (OS 푸시 알림이 아니라, 앱을 열었을 때만 표시됩니다).
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
+import { pushKey } from '@/lib/sync';
 
 const STORAGE_KEY = 'kang-deok-boo-reminders';
 
@@ -25,7 +26,9 @@ export function useReminders() {
   const persist = useCallback((next) => {
     setReminders(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const json = JSON.stringify(next);
+      localStorage.setItem(STORAGE_KEY, json);
+      pushKey(STORAGE_KEY, json);
     } catch (e) {
       console.error('Failed to save reminders:', e);
     }
