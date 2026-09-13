@@ -4,9 +4,11 @@
 // 앱 최상단에서 렌더링 전에 동기화 코드가 설정되어 있으면 클라우드의
 // 최신 데이터를 먼저 내려받습니다. 동기화 미설정/오프라인/실패 시에는
 // 잠깐의 대기 후 로컬 데이터로 그대로 진행합니다(앱이 멈추지 않음).
+// 준비가 끝나면 실시간 리스너를 붙여, 앱이 켜져 있는 동안 다른 기기의
+// 변경이 자동으로(새로고침 없이) 반영되도록 합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react';
-import { getSyncCode, pullAll, isSyncConfigured } from '@/lib/sync';
+import { getSyncCode, pullAll, subscribeAll, isSyncConfigured } from '@/lib/sync';
 import { useTheme } from '@/expense/context/ThemeContext';
 
 const PULL_TIMEOUT_MS = 4000;
@@ -18,6 +20,7 @@ export function SyncGate({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe = () => {};
 
     async function run() {
       if (isSyncConfigured && getSyncCode()) {
@@ -25,6 +28,7 @@ export function SyncGate({ children }) {
           pullAll().catch(() => {}),
           new Promise((resolve) => setTimeout(resolve, PULL_TIMEOUT_MS)),
         ]);
+        if (!cancelled) unsubscribe = subscribeAll();
       }
       if (!cancelled) setReady(true);
     }
@@ -32,6 +36,7 @@ export function SyncGate({ children }) {
     run();
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 

@@ -6,6 +6,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const STORAGE_KEY = 'kang-deok-boo-reminders';
 
@@ -13,15 +14,21 @@ export function useReminders() {
   const [reminders, setReminders] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setReminders(JSON.parse(stored));
+      setReminders(stored ? JSON.parse(stored) : []);
     } catch (e) {
       console.error('Failed to load reminders:', e);
     }
-    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    reload();
+    setLoaded(true);
+  }, [reload]);
+
+  useSyncListener(STORAGE_KEY, reload);
 
   const persist = useCallback((next) => {
     setReminders(next);

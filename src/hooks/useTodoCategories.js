@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_TODO_CATEGORIES } from '@/lib/todoCategories';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const STORAGE_KEY = 'kang-deok-boo-todo-categories';
 
@@ -13,18 +14,26 @@ export function useTodoCategories() {
   const [categories, setCategories] = useState(DEFAULT_TODO_CATEGORIES);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+      } else {
+        setCategories(DEFAULT_TODO_CATEGORIES);
       }
     } catch (e) {
       console.error('할 일 카테고리 불러오기 실패:', e);
     }
-    setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    reload();
+    setLoaded(true);
+  }, [reload]);
+
+  useSyncListener(STORAGE_KEY, reload);
 
   const persist = useCallback((nextCategories) => {
     setCategories(nextCategories);

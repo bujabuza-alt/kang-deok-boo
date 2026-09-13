@@ -9,15 +9,23 @@
 // 긴 랜덤 문자열로 생성합니다. 개인 기기 간 공유 용도로만 사용하세요.
 //
 // 각 키는 로컬(localStorage)에 즉시 저장되어 오프라인에서도 항상 동작하며,
-// 온라인일 때만 Firestore로 값을 올리고(push) 내려받습니다(pull).
-// 충돌 시에는 updatedAt이 더 최신인 쪽이 이깁니다("마지막 저장이 우선").
+// 온라인일 때는 Firestore 실시간 리스너(onSnapshot)로 다른 기기의 변경을
+// 즉시 받아옵니다. 충돌 시에는 updatedAt이 더 최신인 쪽이 이깁니다
+// ("마지막 저장이 우선"). 원격에서 받은 값을 그대로 다시 push하는 걸
+// 막기 위해, 마지막으로 동기화된 값을 메모리에 기억해 두고 동일하면
+// 업로드를 건너뜁니다(그렇지 않으면 두 기기가 서로 계속 재전송하는
+// 핑퐁이 발생할 수 있음).
 // ──────────────────────────────────────────────────────────────────────────────
-import { doc, getDoc, setDoc } from 'firebase/firestore/lite';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { getDb, isSyncConfigured } from '@/lib/firebaseClient';
 import { SYNC_KEYS } from '@/lib/syncKeys';
 
 const CODE_KEY = 'kang-deok-boo-sync-code';
 const META_KEY = 'kang-deok-boo-sync-meta';
+
+// 원격에서 온 값이 로컬에 반영되면 이 이벤트가 window에 발생합니다.
+// (각 데이터 훅은 이 이벤트를 구독해 화면을 즉시 갱신합니다.)
+export const SYNC_EVENT = 'kdb-sync-update';
 
 export { isSyncConfigured };
 
@@ -83,20 +91,50 @@ function setMetaFor(key, updatedAt) {
   }
 }
 
+function notifyKeyUpdated(key) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: { key } }));
+}
+
+// 이 세션에서 마지막으로 Firestore와 일치한다고 확인된 값(키별). 원격에서
+// 받은 값을 화면에 반영했을 때도 채워 넣어서, 그 값이 그대로 다시
+// push되는 걸(핑퐁) 막는 용도입니다. 페이지를 새로고침하면 비워집니다.
+const lastSyncedValue = {};
+
 // ── 개별 키 push/pull ────────────────────────────────────────────────────────
 export async function pushKey(key, rawValue, { updatedAt } = {}) {
   const code = getSyncCode();
   const db = getDb();
   if (!code || !db) return false;
+  if (lastSyncedValue[key] === rawValue) return true; // 변경 없음 → 업로드 생략
   const iso = updatedAt || new Date().toISOString();
   try {
     await setDoc(doc(db, 'syncs', code, 'keys', key), { value: rawValue, updatedAt: iso });
     setMetaFor(key, iso);
+    lastSyncedValue[key] = rawValue;
     return true;
   } catch (e) {
     console.warn(`동기화 업로드 실패 (${key}):`, e);
     return false;
   }
+}
+
+// 원격(클라우드)에서 받은 값이 로컬보다 최신이면 로컬에 반영합니다.
+// 반영했으면 true를 반환합니다.
+function applyRemoteValue(key, value, updatedAt) {
+  const meta = getMeta();
+  const localUpdatedAt = meta[key];
+  if (localUpdatedAt && updatedAt && updatedAt <= localUpdatedAt) return false;
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.error(`동기화 값 저장 실패 (${key}):`, e);
+    return false;
+  }
+  setMetaFor(key, updatedAt);
+  lastSyncedValue[key] = value;
+  notifyKeyUpdated(key);
+  return true;
 }
 
 // 로컬에 저장된 값을 그대로(문자열) 클라우드로 올립니다. 새 동기화 코드를
@@ -118,14 +156,13 @@ export async function pushAllLocal() {
   return results.every(Boolean);
 }
 
-// 클라우드의 모든 키를 가져와, 클라우드가 더 최신이면 로컬을 덮어씁니다.
-// 반환값: { ok, pulledKeys, failed }
+// 클라우드의 모든 키를 한 번 가져와, 클라우드가 더 최신이면 로컬을
+// 덮어씁니다(앱 시작 시 1회 호출). 반환값: { ok, pulledKeys, failed }
 export async function pullAll() {
   const code = getSyncCode();
   const db = getDb();
   if (!code || !db) return { ok: false, pulledKeys: [], failed: false };
 
-  const meta = getMeta();
   const pulledKeys = [];
   let anyFailure = false;
 
@@ -135,12 +172,7 @@ export async function pullAll() {
         const snap = await getDoc(doc(db, 'syncs', code, 'keys', key));
         if (!snap.exists()) return;
         const { value, updatedAt } = snap.data();
-        const localUpdatedAt = meta[key];
-        if (!localUpdatedAt || (updatedAt && updatedAt > localUpdatedAt)) {
-          localStorage.setItem(key, value);
-          setMetaFor(key, updatedAt);
-          pulledKeys.push(key);
-        }
+        if (applyRemoteValue(key, value, updatedAt)) pulledKeys.push(key);
       } catch (e) {
         anyFailure = true;
         console.warn(`동기화 다운로드 실패 (${key}):`, e);
@@ -149,6 +181,29 @@ export async function pullAll() {
   );
 
   return { ok: !anyFailure, pulledKeys, failed: anyFailure };
+}
+
+// 모든 동기화 키에 실시간 리스너를 붙입니다. 다른 기기가 값을 바꾸면
+// 몇 초 내로 로컬에 반영되고 SYNC_EVENT가 발생합니다. 앱이 켜져 있는
+// 동안 계속 유지하고, 반환된 함수를 호출하면 구독을 해제합니다.
+export function subscribeAll() {
+  const code = getSyncCode();
+  const db = getDb();
+  if (!code || !db) return () => {};
+
+  const unsubs = SYNC_KEYS.map(({ key }) =>
+    onSnapshot(
+      doc(db, 'syncs', code, 'keys', key),
+      (snap) => {
+        if (!snap.exists()) return;
+        const { value, updatedAt } = snap.data();
+        applyRemoteValue(key, value, updatedAt);
+      },
+      (e) => console.warn(`실시간 동기화 수신 실패 (${key}):`, e)
+    )
+  );
+
+  return () => unsubs.forEach((unsub) => unsub());
 }
 
 // 다른 기기의 코드를 입력해 연결할 때 사용합니다. 코드를 저장하고 즉시

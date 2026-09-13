@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { DEFAULT_PAYMENT_METHODS, DEFAULT_PRESETS, DEFAULT_CATEGORIES } from '@/expense/constants';
 import { TODAY, uid, ls, addMonths }                                     from '@/expense/utils';
 import { useTheme }                                                       from '@/expense/context/ThemeContext';
+import { useSyncListener }                                                from '@/hooks/useSyncListener';
 
 import Header          from '@/expense/components/Header';
 import BottomNav       from '@/expense/components/BottomNav';
@@ -40,6 +41,13 @@ export default function ExpenseApp() {
     setCategories(ls.get('et_categories', DEFAULT_CATEGORIES));
     setLoaded(true);
   }, []);
+
+  // 다른 기기에서 동기화로 값이 바뀌면 즉시 반영합니다.
+  useSyncListener('et_expenses', useCallback(() => setExpenses(ls.get('et_expenses', [])), []));
+  useSyncListener('et_budget', useCallback(() => setBudget(ls.get('et_budget', 500000)), []));
+  useSyncListener('et_payment_methods', useCallback(() => setPaymentMethods(ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS)), []));
+  useSyncListener('et_presets', useCallback(() => setPresets(ls.get('et_presets', DEFAULT_PRESETS)), []));
+  useSyncListener('et_categories', useCallback(() => setCategories(ls.get('et_categories', DEFAULT_CATEGORIES)), []));
 
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetDraft,   setBudgetDraft]   = useState('');

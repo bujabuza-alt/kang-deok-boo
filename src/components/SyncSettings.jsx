@@ -64,8 +64,9 @@ export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
   const handleDisconnect = () => {
     if (!window.confirm('이 기기의 동기화 연결을 해제할까요? 지금까지의 데이터는 이 기기에 그대로 남고, 앞으로만 다른 기기와 공유되지 않습니다.')) return;
     clearSyncCode();
-    setCode(null);
-    showMsg('success', '동기화 연결을 해제했습니다.');
+    showMsg('success', '동기화 연결을 해제합니다.');
+    // 실시간 수신 연결을 확실히 끊기 위해 새로고침합니다.
+    setTimeout(() => window.location.reload(), 800);
   };
 
   const handleManualSync = async () => {
@@ -76,12 +77,9 @@ export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
       showMsg('error', '동기화에 실패했습니다. 네트워크를 확인해주세요.');
       return;
     }
-    if (result.pulledKeys.length === 0) {
-      showMsg('success', '이미 최신 상태입니다.');
-      return;
-    }
-    showMsg('success', '최신 데이터를 반영하기 위해 새로고침합니다.');
-    setTimeout(() => window.location.reload(), 800);
+    // 실시간 리스너가 항상 켜져 있어 화면은 이미 최신 상태로 갱신되어
+    // 있습니다. 이 버튼은 지금 바로 한 번 더 확인하고 싶을 때 씁니다.
+    showMsg('success', result.pulledKeys.length === 0 ? '이미 최신 상태입니다.' : '최신 데이터를 반영했습니다.');
   };
 
   const handleCopy = async () => {
@@ -106,7 +104,7 @@ export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
       ) : code ? (
         <>
           <p className={mutedCls(lm)}>
-            이 동기화 코드를 다른 기기의 설정 탭에서 입력하면 데이터를 함께 씁니다. 코드를 아는 사람은 누구나 접근할 수 있으니 외부에 공유하지 마세요.
+            이 동기화 코드를 다른 기기의 설정 탭에서 입력하면 데이터를 실시간으로 함께 씁니다(두 기기 모두 앱이 켜져 있으면 새로고침 없이 자동 반영). 코드를 아는 사람은 누구나 접근할 수 있으니 외부에 공유하지 마세요.
           </p>
           <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 font-mono text-sm ${lm ? 'bg-slate-50 border border-slate-200 text-slate-700' : 'bg-gray-800 border border-gray-700 text-gray-200'}`}>
             <span className="flex-1 break-all">{code}</span>

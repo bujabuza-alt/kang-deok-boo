@@ -26,6 +26,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { useReminders } from '@/hooks/useReminders';
 import { useTheme } from '@/expense/context/ThemeContext';
 import { pushKey } from '@/lib/sync';
+import { useSyncListener } from '@/hooks/useSyncListener';
 
 const TOP_SECTIONS = [
   { id: 'todo',      label: '일정',    icon: ListTodo },
@@ -127,6 +128,9 @@ export default function HomePage() {
   useEffect(() => {
     setTopSections(loadSectionOrder());
   }, []);
+
+  // 다른 기기에서 동기화로 탭 순서가 바뀌면 즉시 반영합니다.
+  useSyncListener(SECTION_ORDER_KEY, useCallback(() => setTopSections(loadSectionOrder()), []));
 
   const persistSectionOrder = useCallback((sections) => {
     try {
