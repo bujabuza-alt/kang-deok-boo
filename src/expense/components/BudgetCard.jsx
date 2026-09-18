@@ -1,7 +1,7 @@
 'use client';
 import { Check, X } from 'lucide-react';
 import { fmt } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function BudgetCard({
   budget, monthTotal,

@@ -5,7 +5,9 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import { X, Plus, Trash2, Pin } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
+import { BottomSheet } from './ui/BottomSheet';
+import { IconButton } from './ui/IconButton';
 
 const makeDefaultForm = () => ({ title: '', body: '', checklist: [], pinned: false });
 
@@ -45,41 +47,22 @@ export function MemoEditModal({ memo, onSave, onClose }) {
   }`;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className={`relative w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col ${
-          lm ? 'bg-white' : 'bg-gray-900'
-        }`}
-      >
-        <div className={`flex items-center justify-between px-6 py-4 border-b shrink-0 ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
-          <h2 className={`text-lg font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{memo ? '메모 수정' : '새 메모'}</h2>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => set('pinned', !form.pinned)}
-              aria-label={form.pinned ? '고정 해제' : '상단에 고정'}
-              className={`p-2 rounded-xl transition-colors ${
-                form.pinned
-                  ? 'text-amber-500 bg-amber-50'
-                  : lm ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-600' : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
-              }`}
-            >
-              <Pin className="w-4 h-4" fill={form.pinned ? 'currentColor' : 'none'} />
-            </button>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-xl transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-gray-800 text-gray-500 hover:text-gray-200'}`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <BottomSheet open onClose={onClose} maxWidth="lg">
+      <div className={`flex items-center justify-between px-6 pt-3 pb-4 shrink-0 border-b ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
+        <h2 className={`text-lg font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{memo ? '메모 수정' : '새 메모'}</h2>
+        <div className="flex items-center gap-1">
+          <IconButton
+            icon={Pin}
+            filled={form.pinned}
+            tone={form.pinned ? 'active' : 'default'}
+            label={form.pinned ? '고정 해제' : '상단에 고정'}
+            onClick={() => set('pinned', !form.pinned)}
+          />
+          <IconButton icon={X} label="닫기" onClick={onClose} />
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
+      <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
           <input
             type="text"
             autoFocus
@@ -169,7 +152,6 @@ export function MemoEditModal({ memo, onSave, onClose }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

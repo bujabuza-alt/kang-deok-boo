@@ -5,9 +5,11 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Trash2, Pencil, Flame, ListChecks } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useHabits } from '@/hooks/useHabits';
 import { HabitEditModal } from './HabitEditModal';
+import { IconButton } from './ui/IconButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 const HEATMAP_DAYS = 14;
 
@@ -69,21 +71,9 @@ function HabitRow({ habit, checkinMap, lm, onToggleToday, onEdit, onDelete }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-          <button
-            onClick={() => onEdit(habit)}
-            className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600' : 'hover:bg-gray-800 text-gray-500 hover:text-violet-400'}`}
-            aria-label="습관 수정"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(habit.id)}
-            className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-500' : 'hover:bg-rose-950/40 text-gray-500 hover:text-rose-400'}`}
-            aria-label="습관 삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <IconButton icon={Pencil} label="습관 수정" onClick={() => onEdit(habit)} />
+          <IconButton icon={Trash2} tone="danger" label="습관 삭제" onClick={() => onDelete(habit.id)} />
         </div>
 
         <button
@@ -184,32 +174,13 @@ export function HabitTracker() {
         />
       )}
 
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setDeleteConfirm(null)}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
-          <div className={`relative rounded-2xl shadow-2xl p-6 max-w-sm w-full ${lm ? 'bg-white' : 'bg-gray-900'}`}>
-            <h3 className={`text-lg font-bold mb-2 ${lm ? 'text-slate-800' : 'text-white'}`}>습관 삭제</h3>
-            <p className={`text-sm mb-6 ${lm ? 'text-slate-500' : 'text-gray-400'}`}>이 습관과 체크 기록을 모두 삭제할까요? 되돌릴 수 없어요.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${lm ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-gray-700 text-gray-300 hover:bg-gray-800'}`}
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-medium hover:bg-rose-600 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="습관 삭제"
+        message="이 습관과 체크 기록을 모두 삭제할까요? 되돌릴 수 없어요."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

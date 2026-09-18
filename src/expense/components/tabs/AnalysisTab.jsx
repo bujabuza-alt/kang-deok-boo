@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { BarChart2 } from 'lucide-react';
 import { fmt }    from '@/expense/utils';
 import { MONTHS } from '@/expense/constants';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const PALETTE = [
   'bg-violet-500', 'bg-blue-500',   'bg-emerald-500', 'bg-amber-400',

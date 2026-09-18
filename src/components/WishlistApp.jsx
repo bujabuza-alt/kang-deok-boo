@@ -6,28 +6,14 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Trash2, Pencil, ShoppingBag, Check, ExternalLink } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { getPriorityById } from '@/lib/todoCategories';
-import { DEFAULT_PAYMENT_METHODS } from '@/expense/constants';
-import { ls, fmt, uid, TODAY } from '@/expense/utils';
+import { fmt } from '@/expense/utils';
+import { addQuickExpense } from '@/expense/bridge';
 import { WishlistEditModal } from './WishlistEditModal';
-
-function addToExpenses(item) {
-  const expenses = ls.get('et_expenses', []);
-  const paymentMethods = ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS);
-  ls.set('et_expenses', [
-    ...expenses,
-    {
-      id: uid(),
-      date: TODAY,
-      name: item.name,
-      amount: item.price,
-      paymentMethod: paymentMethods[0] || DEFAULT_PAYMENT_METHODS[0],
-      memo: '위시리스트에서 추가',
-    },
-  ]);
-}
+import { IconButton } from './ui/IconButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 function WishlistRow({ item, lm, onTogglePurchased, onEdit, onDelete }) {
   const priority = getPriorityById(item.priority);
@@ -78,21 +64,9 @@ function WishlistRow({ item, lm, onTogglePurchased, onEdit, onDelete }) {
         </div>
       </div>
 
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-        <button
-          onClick={() => onEdit(item)}
-          className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600' : 'hover:bg-gray-700 text-gray-500 hover:text-violet-400'}`}
-          aria-label="위시리스트 수정"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => onDelete(item.id)}
-          className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-500' : 'hover:bg-rose-950/40 text-gray-500 hover:text-rose-400'}`}
-          aria-label="위시리스트 삭제"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+      <div className="flex gap-0.5 shrink-0">
+        <IconButton icon={Pencil} label="위시리스트 수정" onClick={() => onEdit(item)} />
+        <IconButton icon={Trash2} tone="danger" label="위시리스트 삭제" onClick={() => onDelete(item.id)} />
       </div>
     </div>
   );
@@ -134,7 +108,7 @@ export function WishlistApp({ triggerAdd = false, onTriggerAddDone }) {
   const handleTogglePurchased = (item) => {
     if (!item.purchased && item.price > 0) {
       if (window.confirm(`"${item.name}"을(를) 지출에도 ${fmt(item.price)}원으로 추가할까요?`)) {
-        addToExpenses(item);
+        addQuickExpense({ name: item.name, amount: item.price, memo: '위시리스트에서 추가' });
       }
     }
     togglePurchased(item.id);
@@ -221,32 +195,13 @@ export function WishlistApp({ triggerAdd = false, onTriggerAddDone }) {
         />
       )}
 
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setDeleteConfirm(null)}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
-          <div className={`relative rounded-2xl shadow-2xl p-6 max-w-sm w-full ${lm ? 'bg-white' : 'bg-gray-900'}`}>
-            <h3 className={`text-lg font-bold mb-2 ${lm ? 'text-slate-800' : 'text-white'}`}>위시리스트 삭제</h3>
-            <p className={`text-sm mb-6 ${lm ? 'text-slate-500' : 'text-gray-400'}`}>이 항목을 삭제할까요? 되돌릴 수 없어요.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${lm ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-gray-700 text-gray-300 hover:bg-gray-800'}`}
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-medium hover:bg-rose-600 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="위시리스트 삭제"
+        message="이 항목을 삭제할까요? 되돌릴 수 없어요."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

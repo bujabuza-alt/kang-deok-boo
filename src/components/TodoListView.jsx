@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { ListChecks } from 'lucide-react';
 import { TodoItem } from './TodoItem';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 // 날짜 없는 일정은 정렬 시 항상 맨 뒤로 보냅니다.
 function dateTimeKey(todo) {

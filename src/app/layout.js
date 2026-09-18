@@ -1,11 +1,9 @@
 import './globals.css';
 import { ServiceWorkerUpdater } from '@/components/ServiceWorkerUpdater';
-import { VersionWatermark } from '@/components/VersionWatermark';
 import { SyncGate } from '@/components/SyncGate';
-import { ThemeProvider } from '@/expense/context/ThemeContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const buildId = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
 
 export const metadata = {
   title: '강덕부',
@@ -28,7 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
-        <link rel="apple-touch-icon" href={`${basePath}/apple-touch-icon.png`} />
+        <link rel="apple-touch-icon" href={`${basePath}/icon.svg`} />
       </head>
       <body>
         {/* 앱 전체 라이트/다크 테마 컨텍스트 (원래 지출 탭 전용이었으나 전역으로 확장) */}
@@ -38,8 +36,6 @@ export default function RootLayout({ children }) {
           <SyncGate>{children}</SyncGate>
           {/* SW 등록 + 새 버전 감지 배너 */}
           <ServiceWorkerUpdater swPath={`${basePath}/sw.js`} />
-          {/* 빌드 ID 워터마크 (하단 좌측, 클릭 시 SW 버전 대조) */}
-          <VersionWatermark buildId={buildId} />
         </ThemeProvider>
       </body>
     </html>

@@ -5,9 +5,11 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Pin, Trash2, StickyNote, Search } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useMemos } from '@/hooks/useMemos';
 import { MemoEditModal } from './MemoEditModal';
+import { IconButton } from './ui/IconButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 function MemoCard({ memo, lm, onEdit, onTogglePin, onDelete }) {
   const total = memo.checklist?.length || 0;
@@ -28,21 +30,15 @@ function MemoCard({ memo, lm, onEdit, onTogglePin, onDelete }) {
           {memo.pinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" fill="currentColor" />}
           {memo.title || '(제목 없음)'}
         </h3>
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-          <button
+        <div className="flex items-center gap-0.5 shrink-0">
+          <IconButton
+            icon={Pin}
+            filled={memo.pinned}
+            tone={memo.pinned ? 'active' : 'default'}
+            label={memo.pinned ? '고정 해제' : '상단에 고정'}
             onClick={(e) => { e.stopPropagation(); onTogglePin(memo.id); }}
-            aria-label={memo.pinned ? '고정 해제' : '상단에 고정'}
-            className={`p-1.5 rounded-lg transition-colors ${memo.pinned ? 'text-amber-500' : lm ? 'text-slate-300 hover:text-amber-500 hover:bg-amber-50' : 'text-gray-600 hover:text-amber-400 hover:bg-amber-950/30'}`}
-          >
-            <Pin className="w-3.5 h-3.5" fill={memo.pinned ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(memo.id); }}
-            className={`p-1.5 rounded-lg transition-colors ${lm ? 'text-slate-300 hover:text-rose-500 hover:bg-rose-50' : 'text-gray-600 hover:text-rose-400 hover:bg-rose-950/30'}`}
-            aria-label="메모 삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          />
+          <IconButton icon={Trash2} tone="danger" label="메모 삭제" onClick={(e) => { e.stopPropagation(); onDelete(memo.id); }} />
         </div>
       </div>
 
@@ -173,32 +169,13 @@ export function MemoApp({ triggerAdd = false, onTriggerAddDone }) {
         />
       )}
 
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setDeleteConfirm(null)}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
-          <div className={`relative rounded-2xl shadow-2xl p-6 max-w-sm w-full ${lm ? 'bg-white' : 'bg-gray-900'}`}>
-            <h3 className={`text-lg font-bold mb-2 ${lm ? 'text-slate-800' : 'text-white'}`}>메모 삭제</h3>
-            <p className={`text-sm mb-6 ${lm ? 'text-slate-500' : 'text-gray-400'}`}>이 메모를 삭제할까요? 되돌릴 수 없어요.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${lm ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-gray-700 text-gray-300 hover:bg-gray-800'}`}
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-medium hover:bg-rose-600 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="메모 삭제"
+        message="이 메모를 삭제할까요? 되돌릴 수 없어요."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

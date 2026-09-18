@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Plus, Trash2, Search, Shuffle, X } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const STORAGE_KEY = 'gangdeokbu-meal-menu-custom';
 

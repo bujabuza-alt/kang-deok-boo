@@ -9,27 +9,29 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react';
 import { getSyncCode, pullAll, subscribeAll, isSyncConfigured } from '@/lib/sync';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const PULL_TIMEOUT_MS = 4000;
 
 export function SyncGate({ children }) {
   const { theme } = useTheme();
   const lm = theme === 'light';
-  const [ready, setReady] = useState(false);
+  // 동기화가 설정되어 있지 않으면 처음부터 준비 완료 상태로 시작해,
+  // 동기화를 안 쓰는 사용자는 스피너를 전혀 보지 않고 즉시 앱에 진입합니다.
+  const [ready, setReady] = useState(() => !(isSyncConfigured && getSyncCode()));
 
   useEffect(() => {
+    if (!(isSyncConfigured && getSyncCode())) return;
+
     let cancelled = false;
     let unsubscribe = () => {};
 
     async function run() {
-      if (isSyncConfigured && getSyncCode()) {
-        await Promise.race([
-          pullAll().catch(() => {}),
-          new Promise((resolve) => setTimeout(resolve, PULL_TIMEOUT_MS)),
-        ]);
-        if (!cancelled) unsubscribe = subscribeAll();
-      }
+      await Promise.race([
+        pullAll().catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, PULL_TIMEOUT_MS)),
+      ]);
+      if (!cancelled) unsubscribe = subscribeAll();
       if (!cancelled) setReady(true);
     }
 

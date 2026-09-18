@@ -1,6 +1,6 @@
 'use client';
 import { Plus, PenLine, Zap } from 'lucide-react';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function FAB({ isOpen, onToggle, onGeneralAdd, onQuickAdd }) {
   const { theme } = useTheme();

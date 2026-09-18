@@ -5,11 +5,13 @@
 // 할 일을 자동으로 편입해 오늘 / 예정 / 놓침 3구획으로 보여줍니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useMemo, useEffect } from 'react';
-import { Bell, Plus, Check, Pencil, Trash2, X, CalendarClock } from 'lucide-react';
+import { Bell, Plus, Check, Pencil, Trash2, CalendarClock } from 'lucide-react';
 import { useTodos } from '@/hooks/useTodos';
 import { useTodoCategories } from '@/hooks/useTodoCategories';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 import { formatDateLabel } from '@/lib/todoDate';
+import { IconButton } from './ui/IconButton';
+import { BottomSheet } from './ui/BottomSheet';
 
 const REPEAT_OPTIONS = [
   { id: 'none', label: '반복 안 함' },
@@ -50,29 +52,8 @@ function ReminderForm({ initial, onSave, onClose }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className={`relative w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col ${
-          lm ? 'bg-white' : 'bg-gray-900'
-        }`}
-      >
-        <div className={`flex items-center justify-between px-6 py-4 border-b shrink-0 ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
-          <h2 className={`text-lg font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>
-            {initial ? '알림 수정' : '새 알림'}
-          </h2>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-xl transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-gray-800 text-gray-500 hover:text-gray-200'}`}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
+    <BottomSheet open onClose={onClose} title={initial ? '알림 수정' : '새 알림'}>
+      <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${lm ? 'text-slate-700' : 'text-gray-300'}`}>
               제목 <span className="text-rose-500">*</span>
@@ -161,8 +142,7 @@ function ReminderForm({ initial, onSave, onClose }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -218,21 +198,9 @@ function ReminderRow({ item, lm, onToggle, onEdit, onDelete }) {
       </div>
 
       {!fromTodo && (
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-          <button
-            onClick={() => onEdit(item)}
-            className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600' : 'hover:bg-gray-800 text-gray-500 hover:text-violet-400'}`}
-            aria-label="알림 수정"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(item.id)}
-            className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-500' : 'hover:bg-rose-950/40 text-gray-500 hover:text-rose-400'}`}
-            aria-label="알림 삭제"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex gap-0.5 shrink-0">
+          <IconButton icon={Pencil} label="알림 수정" onClick={() => onEdit(item)} />
+          <IconButton icon={Trash2} tone="danger" label="알림 삭제" onClick={() => onDelete(item.id)} />
         </div>
       )}
     </div>
