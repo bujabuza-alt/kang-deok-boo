@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { CreditCard, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { fmt } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const fmtMonth = (key) => {
   const [y, m] = key.split('-');

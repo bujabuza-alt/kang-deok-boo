@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { fmt } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function AddExpenseModal({
   form, paymentMethods, categories = [], onClose, onFieldChange, onSubmit,

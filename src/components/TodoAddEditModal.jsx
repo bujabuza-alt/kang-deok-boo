@@ -4,9 +4,9 @@
 // 할 일 추가·수정 모달.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { PRIORITY_LEVELS, TODO_TYPES } from '@/lib/todoCategories';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
+import { BottomSheet } from './ui/BottomSheet';
 
 const makeDefaultForm = (firstCategoryId, date) => ({
   title: '',
@@ -57,24 +57,8 @@ export function TodoAddEditModal({ todo, categories, onSave, onClose }) {
   const labelCls = `block text-sm font-medium mb-1.5 ${lm ? 'text-slate-700' : 'text-gray-300'}`;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      <div className={`relative w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col ${lm ? 'bg-white' : 'bg-gray-900'}`}>
-        <div className={`flex items-center justify-between px-6 py-4 border-b shrink-0 ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
-          <h2 className={`text-lg font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{isEdit ? '할 일 수정' : '새 할 일 추가'}</h2>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-xl transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-gray-800 text-gray-500 hover:text-gray-200'}`}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
+    <BottomSheet open onClose={onClose} title={isEdit ? '할 일 수정' : '새 할 일 추가'} maxWidth="lg">
+      <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
           {/* 제목 */}
           <div>
             <label className={labelCls}>
@@ -221,7 +205,6 @@ export function TodoAddEditModal({ todo, categories, onSave, onClose }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

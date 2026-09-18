@@ -2,7 +2,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MONTHS, DAYS } from '@/expense/constants';
 import { compact } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CalendarView({
   year, month, calDays, dayTotals, selDate, today,

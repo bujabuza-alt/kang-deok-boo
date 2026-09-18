@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // lib/categories.js
-// 기본 장르(DEFAULT_GENRES) 정의 및 색상 프리셋(COLOR_PRESETS) 제공.
+// 색상 프리셋(COLOR_PRESETS) 제공. Todo 카테고리 색상 선택 등에서 사용됩니다.
 // ──────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -94,60 +94,3 @@ export const COLOR_PRESETS = [
     hoverBorder: 'hover:border-lime-300', chartColor: '#65a30d',
   },
 ];
-
-/**
- * 기본 장르 목록.
- * localStorage에 저장된 값이 없을 때 초기값으로 사용됩니다.
- * 각 장르에는 defaultItems 배열이 있어 세부 평가 항목을 정의합니다.
- */
-export const DEFAULT_GENRES = [
-  {
-    id: 'alcohol', label: '술', emoji: '🍶', ...COLOR_PRESETS[0],
-    defaultItems: ['향', '맛', '여운', '밸런스'],
-  },
-  {
-    id: 'movie', label: '영화', emoji: '🎬', ...COLOR_PRESETS[1],
-    defaultItems: ['스토리', '연출', '연기', '음악'],
-  },
-  {
-    id: 'restaurant', label: '맛집', emoji: '🍽️', ...COLOR_PRESETS[2],
-    defaultItems: ['맛', '서비스', '분위기', '가성비'],
-  },
-  {
-    id: 'book', label: '책', emoji: '📚', ...COLOR_PRESETS[3],
-    defaultItems: ['내용', '문체', '몰입도', '정보성'],
-  },
-  {
-    id: 'game', label: '게임', emoji: '🎮', ...COLOR_PRESETS[4],
-    defaultItems: ['재미', '그래픽', '스토리', '중독성'],
-  },
-  {
-    id: 'anime', label: '애니', emoji: '🎌', ...COLOR_PRESETS[8],
-    defaultItems: ['스토리', '작화', '음악', '캐릭터'],
-  },
-  {
-    id: 'music', label: '음악', emoji: '🎵', ...COLOR_PRESETS[5],
-    defaultItems: ['멜로디', '가사', '편곡', '감동'],
-  },
-  {
-    id: 'travel', label: '여행', emoji: '✈️', ...COLOR_PRESETS[6],
-    defaultItems: ['경관', '음식', '접근성', '만족도'],
-  },
-  {
-    id: 'other', label: '기타', emoji: '✨', ...COLOR_PRESETS[7],
-    defaultItems: ['품질', '가성비', '만족도', '추천도'],
-  },
-];
-
-// ──────────────────────────────────────────────────────────────────────────────
-// 하위 호환을 위해 CATEGORIES 별칭 유지 (기존 코드가 참조할 경우 대비)
-// ──────────────────────────────────────────────────────────────────────────────
-export const CATEGORIES = DEFAULT_GENRES;
-
-/**
- * id로 장르를 찾아 반환합니다. 없으면 마지막 장르(기타)를 반환합니다.
- */
-export function getCategoryById(id) {
-  return DEFAULT_GENRES.find((c) => c.id === id) || DEFAULT_GENRES[DEFAULT_GENRES.length - 1];
-}
-export const getGenreById = getCategoryById;

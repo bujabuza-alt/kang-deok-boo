@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, CalendarDays } from 'lucide-react';
 import { TodoItem } from './TodoItem';
 import { DAYS_KO, MONTHS_KO, toDateStr } from '@/lib/todoDate';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const CAL_MODES = [
   { id: 'month', label: '월' },

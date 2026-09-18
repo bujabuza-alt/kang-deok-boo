@@ -20,7 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, Trash2, Check, X, Pencil, GripVertical, Tag, ChevronDown, ChevronUp } from 'lucide-react';
 import { uid } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 function CategoryItemGhost({ name, lm }) {
   return (

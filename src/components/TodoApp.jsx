@@ -15,7 +15,8 @@ import { TodoListView } from './TodoListView';
 import { TodoCalendarView } from './TodoCalendarView';
 import { TodoAddEditModal } from './TodoAddEditModal';
 import { TodoCategoryManager } from './TodoCategoryManager';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 const VIEW_MODES = [
   { id: 'sort', label: '목록', icon: List },
@@ -313,32 +314,13 @@ export function TodoApp({ triggerAdd = false, onTriggerAddDone }) {
       )}
 
       {/* 삭제 확인 다이얼로그 */}
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setDeleteConfirm(null)}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
-          <div className={`relative rounded-2xl shadow-2xl p-6 max-w-sm w-full ${lm ? 'bg-white' : 'bg-gray-900'}`}>
-            <h3 className={`text-lg font-bold mb-2 ${lm ? 'text-slate-800' : 'text-white'}`}>할 일 삭제</h3>
-            <p className={`text-sm mb-6 ${lm ? 'text-slate-500' : 'text-gray-400'}`}>이 할 일을 삭제할까요? 되돌릴 수 없어요.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2.5 rounded-xl border font-medium transition-colors ${lm ? 'border-slate-200 text-slate-600 hover:bg-slate-50' : 'border-gray-700 text-gray-300 hover:bg-gray-800'}`}
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-medium hover:bg-rose-600 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="할 일 삭제"
+        message="이 할 일을 삭제할까요? 되돌릴 수 없어요."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

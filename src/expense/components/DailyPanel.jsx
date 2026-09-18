@@ -1,7 +1,7 @@
 'use client';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import { fmt } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function DailyPanel({ selDate, selExpenses, onAddExpense, onDeleteExpense, onEditExpense }) {
   const { theme } = useTheme();

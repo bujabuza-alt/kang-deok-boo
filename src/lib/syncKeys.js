@@ -12,7 +12,6 @@ export const SYNC_KEYS = [
   { key: 'kang-deok-boo-wishlist', fallback: [] },
   { key: 'kang-deok-boo-habits', fallback: [] },
   { key: 'kang-deok-boo-habit-checkins', fallback: {} },
-  { key: 'kang-deok-boo-section-order', fallback: null },
   { key: 'et_expenses', fallback: [] },
   { key: 'et_budget', fallback: 500000 },
   { key: 'et_payment_methods', fallback: null },

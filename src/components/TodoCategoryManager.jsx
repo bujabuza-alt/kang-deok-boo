@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { X, Plus, Trash2, Pencil, Check, RotateCcw } from 'lucide-react';
 import { COLOR_PRESETS } from '@/lib/categories';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 function ColorDot({ preset, selected, onClick, lm }) {
   return (

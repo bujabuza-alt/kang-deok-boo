@@ -3,11 +3,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { DEFAULT_PAYMENT_METHODS, DEFAULT_PRESETS, DEFAULT_CATEGORIES } from '@/expense/constants';
 import { TODAY, uid, ls, addMonths }                                     from '@/expense/utils';
-import { useTheme }                                                       from '@/expense/context/ThemeContext';
+import { useTheme }                                                       from '@/context/ThemeContext';
 import { useSyncListener }                                                from '@/hooks/useSyncListener';
 
-import Header          from '@/expense/components/Header';
-import BottomNav       from '@/expense/components/BottomNav';
+import ExpenseSubNav   from '@/expense/components/ExpenseSubNav';
 import FAB             from '@/expense/components/FAB';
 import AddExpenseModal from '@/expense/components/AddExpenseModal';
 import QuickAddModal   from '@/expense/components/QuickAddModal';
@@ -16,11 +15,10 @@ import HomeTab     from '@/expense/components/tabs/HomeTab';
 import SearchTab   from '@/expense/components/tabs/SearchTab';
 import PaymentTab  from '@/expense/components/tabs/PaymentTab';
 import AnalysisTab from '@/expense/components/tabs/AnalysisTab';
-import SettingsTab from '@/expense/components/tabs/SettingsTab';
 
 export default function ExpenseApp() {
   const now = new Date();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const lm = theme === 'light';
 
   const [year,  setYear]  = useState(now.getFullYear());
@@ -226,10 +224,6 @@ export default function ExpenseApp() {
   };
 
   const deleteExpense  = (id) => setExpenses(prev => prev.filter(e => e.id !== id));
-  const renameCategory = (oldName, newName) => {
-    setCategories(prev => prev.map(c => c.name === oldName ? { ...c, name: newName } : c));
-    setExpenses(prev => prev.map(e => e.name === oldName ? { ...e, name: newName } : e));
-  };
 
   const saveBudget = () => {
     const val = parseFloat(budgetDraft.replace(/[^0-9.]/g, ''));
@@ -255,15 +249,13 @@ export default function ExpenseApp() {
     <div
       data-theme={theme}
       className={`min-h-screen ${lm ? 'bg-slate-50 text-slate-900' : 'bg-gray-950 text-white'}`}
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      {/* 헤더: 스크롤 시 상단 고정 */}
-      <Header />
-
       <div
-        className="max-w-md mx-auto px-4 py-4 space-y-4"
+        className="max-w-3xl mx-auto px-4 py-4 space-y-4"
         style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
       >
+        <ExpenseSubNav activeTab={activeTab} onTabChange={handleTabChange} />
+
         {activeTab === 'home' && (
           <HomeTab
             budget={budget}            monthTotal={monthTotal}
@@ -310,23 +302,6 @@ export default function ExpenseApp() {
           />
         )}
 
-        {activeTab === 'settings' && (
-          <SettingsTab
-            paymentMethods={paymentMethods}
-            presets={presets}
-            onUpdatePaymentMethods={setPaymentMethods}
-            onUpdatePresets={setPresets}
-            categories={categories}
-            onUpdateCategories={setCategories}
-            onRenameCategory={renameCategory}
-            theme={theme}
-            onThemeChange={setTheme}
-            expenses={expenses}
-            budget={budget}
-            onUpdateExpenses={setExpenses}
-            onUpdateBudget={setBudget}
-          />
-        )}
       </div>
 
       {activeTab === 'home' && (
@@ -337,8 +312,6 @@ export default function ExpenseApp() {
           onQuickAdd={handleQuickAdd}
         />
       )}
-
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
       {showAddModal && (
         <AddExpenseModal

@@ -2,7 +2,8 @@
 import { Check, Pencil, Trash2, Clock } from 'lucide-react';
 import { getPriorityById, getTodoTypeById } from '@/lib/todoCategories';
 import { formatDateLabel } from '@/lib/todoDate';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
+import { IconButton } from './ui/IconButton';
 
 export function TodoItem({ todo, category, onToggle, onEdit, onDelete }) {
   const { theme } = useTheme();
@@ -75,21 +76,9 @@ export function TodoItem({ todo, category, onToggle, onEdit, onDelete }) {
         </div>
       </div>
 
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-        <button
-          onClick={() => onEdit(todo)}
-          className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600' : 'hover:bg-gray-700 text-gray-500 hover:text-violet-400'}`}
-          aria-label="할 일 수정"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => onDelete(todo.id)}
-          className={`p-1.5 rounded-lg transition-colors ${lm ? 'hover:bg-rose-50 text-slate-400 hover:text-rose-500' : 'hover:bg-rose-950/40 text-gray-500 hover:text-rose-400'}`}
-          aria-label="할 일 삭제"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+      <div className="flex gap-0.5 shrink-0">
+        <IconButton icon={Pencil} label="할 일 수정" onClick={() => onEdit(todo)} />
+        <IconButton icon={Trash2} label="할 일 삭제" tone="danger" onClick={() => onDelete(todo.id)} />
       </div>
     </div>
   );

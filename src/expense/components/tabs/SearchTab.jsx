@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { Search, X, Trash2, Pencil, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { fmt } from '@/expense/utils';
-import { useTheme } from '@/expense/context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const toIso = (date) => {
   const y = date.getFullYear();

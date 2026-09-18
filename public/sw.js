@@ -9,10 +9,7 @@ const CACHE_NAME = `kang-deok-boo-${BUILD_ID}`;
 
 // HTML 탐색 요청은 프리캐시하지 않음 (Network-First로 항상 최신 버전 보장)
 const PRECACHE_ASSETS = [
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
+  '/icon.svg',
 ];
 
 // ── install: 정적 에셋 프리캐시 + 즉시 활성화 대기 ───────────────────────────
