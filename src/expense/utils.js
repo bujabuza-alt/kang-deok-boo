@@ -13,6 +13,10 @@ export const TODAY = _toDateStr(new Date());
 
 export const fmt = (n) => new Intl.NumberFormat('ko-KR').format(n);
 
+// 금액 입력칸: 표시는 1,000 형식, 저장은 숫자 문자열
+export const fmtInput  = (v) => (v === '' || v == null ? '' : fmt(Number(String(v).replace(/\D/g, ''))));
+export const parseInput = (s) => s.replace(/\D/g, '');
+
 export const compact = (n) => {
   if (n >= 10000) {
     const wan = n / 10000;

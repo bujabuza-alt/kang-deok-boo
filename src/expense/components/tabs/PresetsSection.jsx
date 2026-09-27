@@ -6,7 +6,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import { Plus, Trash2, Check, X, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
-import { uid, fmt } from '@/expense/utils';
+import { uid, fmt, fmtInput, parseInput } from '@/expense/utils';
 import { useTheme } from '@/context/ThemeContext';
 
 const accentBtn = (lm) =>
@@ -99,7 +99,7 @@ export default function PresetsSection({ presets, paymentMethods, onUpdate }) {
             </div>
             <div>
               <span className={labelCls(lm)}>금액 (원)</span>
-              <input type="number" value={newForm.amount} onChange={(e) => setNewForm((f) => ({ ...f, amount: e.target.value }))} placeholder="0" min="0" inputMode="numeric" className={inCls} />
+              <input type="text" value={fmtInput(newForm.amount)} onChange={(e) => setNewForm((f) => ({ ...f, amount: parseInput(e.target.value) }))} placeholder="0" inputMode="numeric" className={inCls} />
             </div>
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function PresetsSection({ presets, paymentMethods, onUpdate }) {
                 <div className="p-3 space-y-2.5">
                   <div className="grid grid-cols-2 gap-2">
                     <div><span className={labelCls(lm)}>카테고리명</span><input autoFocus type="text" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inCls} /></div>
-                    <div><span className={labelCls(lm)}>금액 (원)</span><input type="number" value={editForm.amount} onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))} min="0" inputMode="numeric" className={inCls} /></div>
+                    <div><span className={labelCls(lm)}>금액 (원)</span><input type="text" value={fmtInput(editForm.amount)} onChange={(e) => setEditForm((f) => ({ ...f, amount: parseInput(e.target.value) }))} inputMode="numeric" className={inCls} /></div>
                   </div>
                   <div>
                     <span className={labelCls(lm)}>결제 수단</span>

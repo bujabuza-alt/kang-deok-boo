@@ -130,7 +130,7 @@ export default function ExpenseApp() {
     setFabOpen(false);
   };
 
-  const addExpense = () => {
+  const addExpense = ({ keepOpen = false } = {}) => {
     const amount       = parseFloat(form.amount);
     const installments = Math.max(1, parseInt(form.installmentMonths, 10) || 1);
     if (!form.name.trim() || isNaN(amount) || amount <= 0) return;
@@ -157,6 +157,11 @@ export default function ExpenseApp() {
         installmentGroupId: groupId,
       }));
       setExpenses(prev => [...prev, ...entries]);
+    }
+    if (keepOpen) {
+      // 날짜·카테고리·결제수단은 유지하고 금액·할부·메모만 비움
+      setForm(f => ({ ...f, amount: '', installmentMonths: '1', memo: '' }));
+      return;
     }
     setShowAddModal(false);
   };
