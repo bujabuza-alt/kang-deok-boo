@@ -1,6 +1,6 @@
 'use client';
 import { Check, X } from 'lucide-react';
-import { fmt } from '@/expense/utils';
+import { fmt, fmtInput, parseInput } from '@/expense/utils';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function BudgetCard({
@@ -24,8 +24,8 @@ export default function BudgetCard({
               autoFocus
               type="text"
               inputMode="numeric"
-              value={budgetDraft}
-              onChange={e => onDraftChange(e.target.value)}
+              value={fmtInput(budgetDraft)}
+              onChange={e => onDraftChange(parseInput(e.target.value))}
               onKeyDown={e => {
                 if (e.key === 'Enter')  onSave();
                 if (e.key === 'Escape') onCancel();

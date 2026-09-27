@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { fmt } from '@/expense/utils';
+import { fmt, fmtInput, parseInput } from '@/expense/utils';
 import { useTheme } from '@/context/ThemeContext';
+
+const AMOUNT_STEPS = [100, 1000, 10000];
 
 export default function AddExpenseModal({
   form, paymentMethods, categories = [], onClose, onFieldChange, onSubmit,
@@ -40,7 +42,13 @@ export default function AddExpenseModal({
     setShowCustom(true);
   };
 
-  const labelCls = `block text-[10px] font-bold uppercase tracking-widest mb-1.5 ${lm ? 'text-slate-400' : 'text-gray-500'}`;
+  const stepAmount = (delta) => {
+    const next = Math.max(0, (parseFloat(form.amount) || 0) + delta);
+    onFieldChange('amount', next > 0 ? String(next) : '');
+  };
+
+  const stepBtnCls = `w-8 py-2 text-sm font-bold transition-colors ${lm ? 'bg-slate-50 text-slate-600 hover:bg-slate-100' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`;
+  const labelCls =`block text-[10px] font-bold uppercase tracking-widest mb-1.5 ${lm ? 'text-slate-400' : 'text-gray-500'}`;
   const inputCls = `block w-full border rounded-xl px-3 py-2.5 text-sm outline-none transition-colors ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900 placeholder-slate-300' : 'bg-gray-800 border-gray-700 focus:border-violet-500 text-white placeholder-gray-600'}`;
 
   return (
@@ -131,15 +139,23 @@ export default function AddExpenseModal({
             <div>
               <label className={labelCls}>금액 (원)</label>
               <input
-                type="number"
-                value={form.amount}
-                onChange={e => onFieldChange('amount', e.target.value)}
+                type="text"
+                value={fmtInput(form.amount)}
+                onChange={e => onFieldChange('amount', parseInput(e.target.value))}
                 placeholder="0"
-                min="0"
                 inputMode="numeric"
                 onKeyDown={e => e.key === 'Enter' && isValid && onSubmit()}
                 className={inputCls}
               />
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {AMOUNT_STEPS.map(step => (
+                  <div key={step} className={`flex rounded-xl border overflow-hidden ${lm ? 'border-slate-200' : 'border-gray-700'}`}>
+                    <button type="button" onClick={() => stepAmount(-step)} className={stepBtnCls}>−</button>
+                    <span className={`flex-1 flex items-center justify-center text-[11px] font-medium ${lm ? 'text-slate-500' : 'text-gray-400'}`}>{fmt(step)}</span>
+                    <button type="button" onClick={() => stepAmount(step)} className={stepBtnCls}>+</button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {!editMode && (
@@ -193,17 +209,32 @@ export default function AddExpenseModal({
             </div>
           </div>
 
-          <button
-            onClick={onSubmit}
-            disabled={!isValid}
-            className={`mt-5 w-full py-3.5 font-bold rounded-xl transition-colors ${
-              isValid
-                ? lm ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-violet-600 hover:bg-violet-500 text-white'
-                : lm ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            {editMode ? '수정하기' : '추가하기'}
-          </button>
+          <div className="mt-5 flex gap-2">
+            <button
+              onClick={() => onSubmit()}
+              disabled={!isValid}
+              className={`flex-1 py-3.5 font-bold rounded-xl transition-colors ${
+                isValid
+                  ? lm ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-violet-600 hover:bg-violet-500 text-white'
+                  : lm ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+              }`}
+            >
+              {editMode ? '수정하기' : '추가'}
+            </button>
+            {!editMode && (
+              <button
+                onClick={() => onSubmit({ keepOpen: true })}
+                disabled={!isValid}
+                className={`flex-1 py-3.5 font-bold rounded-xl border transition-colors ${
+                  isValid
+                    ? lm ? 'border-indigo-600 text-indigo-600 hover:bg-indigo-50' : 'border-violet-500 text-violet-300 hover:bg-violet-900/30'
+                    : lm ? 'border-slate-100 text-slate-300 cursor-not-allowed' : 'border-gray-800 text-gray-600 cursor-not-allowed'
+                }`}
+              >
+                계속 추가
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
