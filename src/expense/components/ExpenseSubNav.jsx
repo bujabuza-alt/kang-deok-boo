@@ -1,12 +1,12 @@
 'use client';
 // ──────────────────────────────────────────────────────────────────────────────
 // expense/components/ExpenseSubNav.jsx
-// 지출 화면 내부의 2차 네비게이션(홈/검색/결제수단/분석). 전역 하단 탭바가
+// 지출 화면 내부의 2차 네비게이션(홈/검색/결제수단/분석/영수증). 전역 하단 탭바가
 // 화면 간 이동을 담당하게 되면서, 기존의 전용 하단 탭바+헤더 대신
 // 콘텐츠 상단의 세그먼트 컨트롤로 대체합니다. 설정은 전역 설정 화면으로
 // 이동했으므로 여기엔 포함하지 않습니다.
 // ──────────────────────────────────────────────────────────────────────────────
-import { Home, Search, CreditCard, BarChart2 } from 'lucide-react';
+import { Home, Search, CreditCard, BarChart2, Receipt } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 const TABS = [
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'search', Icon: Search, label: '검색' },
   { id: 'payment', Icon: CreditCard, label: '결제수단' },
   { id: 'analysis', Icon: BarChart2, label: '분석' },
+  { id: 'receipt', Icon: Receipt, label: '영수증' },
 ];
 
 export default function ExpenseSubNav({ activeTab, onTabChange }) {
