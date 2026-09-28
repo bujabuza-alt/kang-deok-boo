@@ -15,6 +15,7 @@ import HomeTab     from '@/expense/components/tabs/HomeTab';
 import SearchTab   from '@/expense/components/tabs/SearchTab';
 import PaymentTab  from '@/expense/components/tabs/PaymentTab';
 import AnalysisTab from '@/expense/components/tabs/AnalysisTab';
+import ReceiptTab  from '@/expense/components/tabs/ReceiptTab';
 
 export default function ExpenseApp() {
   const now = new Date();
@@ -306,6 +307,8 @@ export default function ExpenseApp() {
             month={month}
           />
         )}
+
+        {activeTab === 'receipt' && <ReceiptTab />}
 
       </div>
 

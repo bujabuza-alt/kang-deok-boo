@@ -17,6 +17,11 @@ export const SYNC_KEYS = [
   { key: 'et_payment_methods', fallback: null },
   { key: 'et_presets', fallback: null },
   { key: 'et_categories', fallback: null },
+  { key: 'et_receipts_0', fallback: [] },
+  { key: 'et_receipts_1', fallback: [] },
+  { key: 'et_receipts_2', fallback: [] },
+  { key: 'et_receipts_3', fallback: [] },
+  { key: 'et_receipts_4', fallback: [] },
 ];
 
 export const SYNC_KEY_NAMES = SYNC_KEYS.map((k) => k.key);
