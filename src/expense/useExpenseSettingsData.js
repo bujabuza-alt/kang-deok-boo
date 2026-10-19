@@ -18,6 +18,7 @@ export function useExpenseSettingsData() {
   const [paymentMethods, setPaymentMethodsState] = useState(DEFAULT_PAYMENT_METHODS);
   const [presets, setPresetsState] = useState(DEFAULT_PRESETS);
   const [categories, setCategoriesState] = useState(DEFAULT_CATEGORIES);
+  const [categoryBudgets, setCategoryBudgetsState] = useState({});
 
   useEffect(() => {
     setExpensesState(ls.get('et_expenses', []));
@@ -25,6 +26,7 @@ export function useExpenseSettingsData() {
     setPaymentMethodsState(ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS));
     setPresetsState(ls.get('et_presets', DEFAULT_PRESETS));
     setCategoriesState(ls.get('et_categories', DEFAULT_CATEGORIES));
+    setCategoryBudgetsState(ls.get('et_category_budgets', {}));
     setLoaded(true);
   }, []);
 
@@ -33,12 +35,25 @@ export function useExpenseSettingsData() {
   useSyncListener('et_payment_methods', useCallback(() => setPaymentMethodsState(ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS)), []));
   useSyncListener('et_presets', useCallback(() => setPresetsState(ls.get('et_presets', DEFAULT_PRESETS)), []));
   useSyncListener('et_categories', useCallback(() => setCategoriesState(ls.get('et_categories', DEFAULT_CATEGORIES)), []));
+  useSyncListener('et_category_budgets', useCallback(() => setCategoryBudgetsState(ls.get('et_category_budgets', {})), []));
 
   const setExpenses = useCallback((next) => { setExpensesState(next); ls.set('et_expenses', next); }, []);
   const setBudget = useCallback((next) => { setBudgetState(next); ls.set('et_budget', next); }, []);
   const setPaymentMethods = useCallback((next) => { setPaymentMethodsState(next); ls.set('et_payment_methods', next); }, []);
   const setPresets = useCallback((next) => { setPresetsState(next); ls.set('et_presets', next); }, []);
   const setCategories = useCallback((next) => { setCategoriesState(next); ls.set('et_categories', next); }, []);
+  const setCategoryBudgets = useCallback((next) => { setCategoryBudgetsState(next); ls.set('et_category_budgets', next); }, []);
+
+  // 카테고리별 월 예산(0이면 설정 해제)
+  const setCategoryBudget = useCallback(
+    (name, amount) => {
+      const next = { ...categoryBudgets };
+      if (amount > 0) next[name] = amount;
+      else delete next[name];
+      setCategoryBudgets(next);
+    },
+    [categoryBudgets, setCategoryBudgets]
+  );
 
   // 카테고리 이름을 바꾸면 이미 기록된 지출의 카테고리명도 함께 바꿔줍니다
   // (ExpenseApp이 기존에 하던 동작을 그대로 이식).
@@ -46,14 +61,18 @@ export function useExpenseSettingsData() {
     (oldName, newName) => {
       setCategories(categories.map((c) => (c.name === oldName ? { ...c, name: newName } : c)));
       setExpenses(expenses.map((e) => (e.name === oldName ? { ...e, name: newName } : e)));
+      if (oldName in categoryBudgets) {
+        const { [oldName]: amount, ...rest } = categoryBudgets;
+        setCategoryBudgets({ ...rest, [newName]: amount });
+      }
     },
-    [categories, expenses, setCategories, setExpenses]
+    [categories, expenses, categoryBudgets, setCategories, setExpenses, setCategoryBudgets]
   );
 
   return {
     loaded,
-    expenses, budget, paymentMethods, presets, categories,
+    expenses, budget, paymentMethods, presets, categories, categoryBudgets,
     setExpenses, setBudget, setPaymentMethods, setPresets, setCategories,
-    renameCategory,
+    renameCategory, setCategoryBudget,
   };
 }

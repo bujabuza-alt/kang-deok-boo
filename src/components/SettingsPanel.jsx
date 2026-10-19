@@ -1,7 +1,7 @@
 'use client';
 // ──────────────────────────────────────────────────────────────────────────────
 // components/SettingsPanel.jsx
-// '설정' 화면. 테마, 지출 관리(결제수단/프리셋/카테고리), 기기 동기화,
+// '설정' 화면. 테마, 하단 탭 구성, 지출 관리(결제수단/프리셋/카테고리), 기기 동기화,
 // 전체 데이터 백업/복원, 앱 정보를 한 화면에 모읍니다. 원래 지출 화면 안에
 // 따로 있던 설정 탭(테마 3종·지출 전용 백업)을 이 화면 하나로 통합했습니다.
 // ──────────────────────────────────────────────────────────────────────────────
@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { ls, exportJSON } from '@/expense/utils';
 import { SYNC_KEYS } from '@/lib/syncKeys';
 import { SyncSettings } from '@/components/SyncSettings';
+import { NavTabsSection } from '@/components/NavTabsSection';
 import { useExpenseSettingsData } from '@/expense/useExpenseSettingsData';
 import CategorySection from '@/expense/components/tabs/CategorySection';
 import PaymentMethodsSection from '@/expense/components/tabs/PaymentMethodsSection';
@@ -45,9 +46,9 @@ export function SettingsPanel() {
 
   const {
     loaded: expenseLoaded,
-    expenses, budget, paymentMethods, presets, categories,
+    expenses, budget, paymentMethods, presets, categories, categoryBudgets,
     setExpenses, setBudget, setPaymentMethods, setPresets, setCategories,
-    renameCategory,
+    renameCategory, setCategoryBudget,
   } = useExpenseSettingsData();
 
   const showMsg = (type, text) => {
@@ -157,6 +158,8 @@ export function SettingsPanel() {
         </div>
       </section>
 
+      <NavTabsSection lm={lm} sectionCls={sectionCls} h3Cls={h3Cls} mutedCls={mutedCls} />
+
       <section className={sectionCls(lm)}>
         <div className="flex items-center gap-2">
           <Wallet className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
@@ -164,7 +167,13 @@ export function SettingsPanel() {
         </div>
         {expenseLoaded ? (
           <div className="space-y-3">
-            <CategorySection categories={categories} onUpdate={setCategories} onRename={renameCategory} />
+            <CategorySection
+              categories={categories}
+              onUpdate={setCategories}
+              onRename={renameCategory}
+              budgets={categoryBudgets}
+              onBudgetChange={setCategoryBudget}
+            />
             <PaymentMethodsSection paymentMethods={paymentMethods} onUpdate={setPaymentMethods} />
             <PresetsSection presets={presets} paymentMethods={paymentMethods} onUpdate={setPresets} />
           </div>

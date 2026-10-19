@@ -1,20 +1,16 @@
 'use client';
 // ──────────────────────────────────────────────────────────────────────────────
 // components/BottomNav.jsx
-// 전역 하단 탭바(홈/일정/지출/더보기). 기존에 상단 드래그 정렬 탭 8개 +
+// 전역 하단 탭바. 기존에 상단 드래그 정렬 탭 8개 +
 // 지출만 별도 라우트로 이동하던 두 가지 네비게이션 방식을 이 하나로 통일합니다.
+// 어떤 탭을 어떤 순서로 보일지는 사용자가 설정에서 고릅니다(tabs prop).
 // ──────────────────────────────────────────────────────────────────────────────
-import { Home, ListTodo, Wallet, MoreHorizontal } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { NAV_ITEMS, MORE_TAB } from './navItems';
 
-const TABS = [
-  { id: 'home', Icon: Home, label: '홈' },
-  { id: 'todo', Icon: ListTodo, label: '일정' },
-  { id: 'expense', Icon: Wallet, label: '지출' },
-  { id: 'more', Icon: MoreHorizontal, label: '더보기' },
-];
+const ITEM_BY_ID = Object.fromEntries([...NAV_ITEMS, MORE_TAB].map((t) => [t.id, t]));
 
-export function BottomNav({ activeTab, onTabChange }) {
+export function BottomNav({ tabs, activeTab, onTabChange }) {
   const { theme } = useTheme();
   const lm = theme === 'light';
 
@@ -26,7 +22,8 @@ export function BottomNav({ activeTab, onTabChange }) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="max-w-3xl mx-auto flex">
-        {TABS.map(({ id, Icon, label }) => {
+        {tabs.map((id) => {
+          const { icon: Icon, label } = ITEM_BY_ID[id];
           const active = activeTab === id;
           return (
             <button

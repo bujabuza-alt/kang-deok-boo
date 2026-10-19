@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, Trash2, Check, X, Pencil, GripVertical, Tag, ChevronDown, ChevronUp } from 'lucide-react';
-import { uid } from '@/expense/utils';
+import { uid, fmt, fmtInput, parseInput } from '@/expense/utils';
 import { useTheme } from '@/context/ThemeContext';
 
 function CategoryItemGhost({ name, lm }) {
@@ -34,8 +34,14 @@ function CategoryItemGhost({ name, lm }) {
 function SortableCategoryItem({
   category, isEditing, editDraft,
   onEditChange, onEditSave, onEditCancel, onStartEdit, onDelete,
+  budget, onBudgetChange,
   lm,
 }) {
+  const [budgetDraft, setBudgetDraft] = useState(null);
+  const saveBudget = () => {
+    onBudgetChange(category.name, Number(budgetDraft) || 0);
+    setBudgetDraft(null);
+  };
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
 
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0 : 1 };
@@ -80,6 +86,34 @@ function SortableCategoryItem({
           <span className={`flex-1 text-sm font-medium truncate ${lm ? 'text-slate-700' : 'text-gray-200'}`}>
             {category.name}
           </span>
+          {budgetDraft !== null ? (
+            <input
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              value={fmtInput(budgetDraft)}
+              onChange={e => setBudgetDraft(parseInput(e.target.value))}
+              onBlur={saveBudget}
+              onKeyDown={e => {
+                if (e.key === 'Enter')  saveBudget();
+                if (e.key === 'Escape') setBudgetDraft(null);
+              }}
+              placeholder="월 예산"
+              aria-label={`${category.name} 월 예산`}
+              className={`w-24 text-right text-xs px-2 py-1 rounded-lg border outline-none ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900' : 'bg-gray-700 border-gray-600 focus:border-violet-500 text-white'}`}
+            />
+          ) : (
+            <button
+              onClick={() => setBudgetDraft(budget ? String(budget) : '')}
+              className={`text-[11px] px-2 py-1 rounded-lg shrink-0 transition-colors ${
+                budget
+                  ? lm ? 'text-indigo-600 bg-indigo-50' : 'text-violet-400 bg-violet-900/30'
+                  : lm ? 'text-slate-400 hover:text-slate-600' : 'text-gray-600 hover:text-gray-400'
+              }`}
+            >
+              {budget ? `₩${fmt(budget)}` : '예산 설정'}
+            </button>
+          )}
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => onStartEdit(category)}
@@ -102,7 +136,7 @@ function SortableCategoryItem({
   );
 }
 
-export default function CategorySection({ categories, onUpdate, onRename }) {
+export default function CategorySection({ categories, onUpdate, onRename, budgets = {}, onBudgetChange }) {
   const { theme } = useTheme();
   const lm = theme === 'light';
 
@@ -225,6 +259,8 @@ export default function CategorySection({ categories, onUpdate, onRename }) {
                     onEditCancel={() => setEditingId(null)}
                     onStartEdit={startEdit}
                     onDelete={deleteCategory}
+                    budget={budgets[cat.name] || 0}
+                    onBudgetChange={onBudgetChange}
                     lm={lm}
                   />
                 ))}

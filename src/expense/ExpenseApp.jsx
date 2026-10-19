@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { DEFAULT_PAYMENT_METHODS, DEFAULT_PRESETS, DEFAULT_CATEGORIES } from '@/expense/constants';
 import { TODAY, uid, ls, addMonths }                                     from '@/expense/utils';
+import { budgetSummary, monthKey }                                        from '@/expense/budget';
 import { useTheme }                                                       from '@/context/ThemeContext';
 import { useSyncListener }                                                from '@/hooks/useSyncListener';
 
@@ -31,6 +32,10 @@ export default function ExpenseApp() {
   const [paymentMethods, setPaymentMethods] = useState(DEFAULT_PAYMENT_METHODS);
   const [presets,        setPresets]        = useState(DEFAULT_PRESETS);
   const [categories,     setCategories]     = useState(DEFAULT_CATEGORIES);
+  const [budgetHistory,  setBudgetHistory]  = useState({});
+  const [carryStart,     setCarryStart]     = useState(null);
+  const [carryEnabled,   setCarryEnabled]   = useState(true);
+  const [categoryBudgets, setCategoryBudgets] = useState({});
 
   useEffect(() => {
     setExpenses(ls.get('et_expenses', []));
@@ -38,6 +43,13 @@ export default function ExpenseApp() {
     setPaymentMethods(ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS));
     setPresets(ls.get('et_presets', DEFAULT_PRESETS));
     setCategories(ls.get('et_categories', DEFAULT_CATEGORIES));
+    setBudgetHistory(ls.get('et_budget_history', {}));
+    setCarryEnabled(ls.get('et_carry_enabled', true));
+    setCategoryBudgets(ls.get('et_category_budgets', {}));
+    // 이월은 이 기능을 처음 연 달부터 계산합니다(그 이전 기록은 이월에 반영하지 않음).
+    let start = ls.get('et_carry_start', null);
+    if (!start) { start = TODAY.slice(0, 7); ls.set('et_carry_start', start); }
+    setCarryStart(start);
     setLoaded(true);
   }, []);
 
@@ -47,6 +59,10 @@ export default function ExpenseApp() {
   useSyncListener('et_payment_methods', useCallback(() => setPaymentMethods(ls.get('et_payment_methods', DEFAULT_PAYMENT_METHODS)), []));
   useSyncListener('et_presets', useCallback(() => setPresets(ls.get('et_presets', DEFAULT_PRESETS)), []));
   useSyncListener('et_categories', useCallback(() => setCategories(ls.get('et_categories', DEFAULT_CATEGORIES)), []));
+  useSyncListener('et_budget_history', useCallback(() => setBudgetHistory(ls.get('et_budget_history', {})), []));
+  useSyncListener('et_carry_start', useCallback(() => setCarryStart(ls.get('et_carry_start', null)), []));
+  useSyncListener('et_carry_enabled', useCallback(() => setCarryEnabled(ls.get('et_carry_enabled', true)), []));
+  useSyncListener('et_category_budgets', useCallback(() => setCategoryBudgets(ls.get('et_category_budgets', {})), []));
 
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetDraft,   setBudgetDraft]   = useState('');
@@ -94,9 +110,12 @@ export default function ExpenseApp() {
     return map;
   }, [monthExpenses]);
 
-  const monthTotal = useMemo(
-    () => monthExpenses.reduce((s, e) => s + e.amount, 0),
-    [monthExpenses]
+  const summary = useMemo(
+    () => budgetSummary({
+      expenses, history: budgetHistory, fallback: budget,
+      startKey: carryStart, enabled: carryEnabled, year, month, today: TODAY,
+    }),
+    [expenses, budgetHistory, budget, carryStart, carryEnabled, year, month]
   );
 
   const calDays = useMemo(() => {
@@ -233,9 +252,19 @@ export default function ExpenseApp() {
 
   const saveBudget = () => {
     const val = parseFloat(budgetDraft.replace(/[^0-9.]/g, ''));
-    if (!isNaN(val) && val >= 0) setBudget(val);
+    if (!isNaN(val) && val >= 0) {
+      setBudget(val);
+      // 보고 있는 달부터 새 기본예산을 적용 — 그 이전 달의 이월 계산은 그대로 둡니다.
+      const nextHistory = { ...budgetHistory, [monthKey(year, month)]: val };
+      setBudgetHistory(nextHistory);
+      ls.set('et_budget_history', nextHistory);
+    }
     setEditingBudget(false);
     setBudgetDraft('');
+  };
+
+  const toggleCarry = () => {
+    setCarryEnabled(v => { ls.set('et_carry_enabled', !v); return !v; });
   };
 
   const handleFabToggle  = () => setFabOpen(o => !o);
@@ -264,9 +293,10 @@ export default function ExpenseApp() {
 
         {activeTab === 'home' && (
           <HomeTab
-            budget={budget}            monthTotal={monthTotal}
+            summary={summary}           carryEnabled={carryEnabled}
+            onToggleCarry={toggleCarry}
             editingBudget={editingBudget} budgetDraft={budgetDraft}
-            onEditBudgetStart={() => { setEditingBudget(true); setBudgetDraft(String(budget)); }}
+            onEditBudgetStart={() => { setEditingBudget(true); setBudgetDraft(String(summary.base)); }}
             onBudgetDraftChange={setBudgetDraft}
             onSaveBudget={saveBudget}
             onCancelBudgetEdit={() => setEditingBudget(false)}
@@ -302,7 +332,8 @@ export default function ExpenseApp() {
         {activeTab === 'analysis' && (
           <AnalysisTab
             expenses={expenses}
-            budget={budget}
+            budget={summary.effective}
+            categoryBudgets={categoryBudgets}
             year={year}
             month={month}
           />
