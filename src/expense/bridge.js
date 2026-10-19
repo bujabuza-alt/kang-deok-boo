@@ -6,6 +6,7 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { DEFAULT_PAYMENT_METHODS } from './constants';
 import { ls, uid, TODAY } from './utils';
+import { budgetSummary } from './budget';
 
 export function addQuickExpense({ name, amount, date = TODAY, memo = '' }) {
   const expenses = ls.get('et_expenses', []);
@@ -21,4 +22,18 @@ export function addQuickExpense({ name, amount, date = TODAY, memo = '' }) {
       memo,
     },
   ]);
+}
+
+// 홈 대시보드용: 이번달 실예산(이월 반영)·지출·하루 사용 가능 금액
+export function getBudgetSummary(today = TODAY) {
+  return budgetSummary({
+    expenses: ls.get('et_expenses', []),
+    history: ls.get('et_budget_history', {}),
+    fallback: ls.get('et_budget', 500000),
+    startKey: ls.get('et_carry_start', null),
+    enabled: ls.get('et_carry_enabled', true),
+    year: Number(today.slice(0, 4)),
+    month: Number(today.slice(5, 7)) - 1,
+    today,
+  });
 }

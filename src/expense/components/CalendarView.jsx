@@ -97,9 +97,9 @@ export default function CalendarView({
                 <span className="text-[9px] text-rose-500 font-bold leading-tight mt-0.5">
                   {compact(total)}
                 </span>
-              ) : (
+              ) : ds <= today ? (
                 <span className="w-1 h-1 rounded-full bg-emerald-500/70 mt-1" />
-              )}
+              ) : null}
             </button>
           );
         })}
@@ -108,7 +108,7 @@ export default function CalendarView({
       <div className={`flex items-center gap-4 px-4 py-2.5 border-t ${lm ? 'border-slate-100 bg-slate-50/50' : 'border-gray-800'}`}>
         <div className={`flex items-center gap-1.5 text-[10px] ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 inline-block" />
-          지출 없음
+          무지출
         </div>
         <div className={`flex items-center gap-1.5 text-[10px] ${lm ? 'text-slate-400' : 'text-gray-600'}`}>
           <span className="text-rose-500 font-bold text-[9px]">1,000</span>

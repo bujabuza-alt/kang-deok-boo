@@ -4,9 +4,11 @@ import { BookOpen, Bell } from 'lucide-react';
 import { TodoApp } from '@/components/TodoApp';
 import ExpenseApp from '@/expense/ExpenseApp';
 import { HomeDashboard } from '@/components/HomeDashboard';
-import { MoreMenu } from '@/components/MoreMenu';
+import { MoreMenu, FEATURE_COMPONENTS } from '@/components/MoreMenu';
 import { BottomNav } from '@/components/BottomNav';
+import { TimeboxPlanner } from '@/components/TimeboxPlanner';
 import { useReminders } from '@/hooks/useReminders';
+import { useNavTabs } from '@/hooks/useNavTabs';
 import { useTheme } from '@/context/ThemeContext';
 
 function todayStr() {
@@ -22,6 +24,7 @@ export default function HomePage() {
   const [moreFeature, setMoreFeature] = useState(null);
 
   const { reminders, loaded: remindersLoaded } = useReminders();
+  const { navTabs } = useNavTabs();
 
   // 헤더 알림 배지: 오늘 마감이거나 지난, 아직 완료하지 않은 독립 리마인더 개수.
   const dueReminderCount = useMemo(() => {
@@ -30,7 +33,13 @@ export default function HomePage() {
     return reminders.filter((r) => !r.done && r.datetime && r.datetime.slice(0, 10) <= today).length;
   }, [reminders, remindersLoaded]);
 
+  // 하단 탭에 올라가 있는 기능이면 그 탭으로, 아니면 '더보기' 안에서 엽니다.
   const openMoreFeature = (feature) => {
+    if (navTabs.includes(feature)) {
+      setActiveTab(feature);
+      setMoreFeature(null);
+      return;
+    }
     setActiveTab('more');
     setMoreFeature(feature);
   };
@@ -39,6 +48,9 @@ export default function HomePage() {
     setActiveTab(tab);
     if (tab !== 'more') setMoreFeature(null);
   };
+
+  // 하단 탭에 직접 올린 기능(메모·습관 등)
+  const DirectFeature = FEATURE_COMPONENTS[activeTab];
 
   return (
     <div className={`min-h-dvh flex flex-col ${lm ? 'bg-slate-50' : 'bg-gray-950'}`}>
@@ -76,6 +88,7 @@ export default function HomePage() {
             onGoTodo={() => handleTabChange('todo')}
             onGoExpense={() => handleTabChange('expense')}
             onOpenMore={openMoreFeature}
+            onGoTimebox={() => handleTabChange('timebox')}
           />
         )}
 
@@ -83,10 +96,16 @@ export default function HomePage() {
 
         {activeTab === 'expense' && <ExpenseApp />}
 
-        {activeTab === 'more' && <MoreMenu feature={moreFeature} onSelectFeature={setMoreFeature} />}
+        {activeTab === 'timebox' && <TimeboxPlanner />}
+
+        {DirectFeature && <DirectFeature />}
+
+        {activeTab === 'more' && (
+          <MoreMenu feature={moreFeature} onSelectFeature={setMoreFeature} navTabs={navTabs} onGoTab={handleTabChange} />
+        )}
       </main>
 
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNav tabs={navTabs} activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }

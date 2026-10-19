@@ -4,7 +4,7 @@ import CalendarView from '@/expense/components/CalendarView';
 import DailyPanel   from '@/expense/components/DailyPanel';
 
 export default function HomeTab({
-  budget, monthTotal,
+  summary, carryEnabled, onToggleCarry,
   editingBudget, budgetDraft,
   onEditBudgetStart, onBudgetDraftChange, onSaveBudget, onCancelBudgetEdit,
   year, month, calDays, dayTotals, selDate, today,
@@ -14,8 +14,9 @@ export default function HomeTab({
   return (
     <div className="space-y-4">
       <BudgetCard
-        budget={budget}
-        monthTotal={monthTotal}
+        summary={summary}
+        carryEnabled={carryEnabled}
+        onToggleCarry={onToggleCarry}
         editingBudget={editingBudget}
         budgetDraft={budgetDraft}
         onEditStart={onEditBudgetStart}
