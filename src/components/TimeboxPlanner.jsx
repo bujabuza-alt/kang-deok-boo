@@ -38,6 +38,24 @@ function dateLabel(dateStr) {
 
 const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
+// 'HH:MM' 바로 앞 30분 칸 키
+function prevSlotKey(key) {
+  const [h, m] = key.split(':').map(Number);
+  return m === 30 ? `${String(h).padStart(2, '0')}:00` : `${String(h - 1).padStart(2, '0')}:30`;
+}
+
+// 할 일 텍스트별로 타임박스에 배치된 횟수. 한 번에 여러 칸을 채운 경우(연속된 같은 텍스트)는 1회로 셉니다.
+function countPicks(days) {
+  const counts = new Map();
+  Object.values(days).forEach(({ blocks = {} }) => {
+    Object.entries(blocks).forEach(([key, block]) => {
+      if (blocks[prevSlotKey(key)]?.text === block.text) return;
+      counts.set(block.text, (counts.get(block.text) || 0) + 1);
+    });
+  });
+  return counts;
+}
+
 function SectionTitle({ icon: Icon, children, lm, right }) {
   return (
     <div className="flex items-center justify-between mb-3">
@@ -50,7 +68,7 @@ function SectionTitle({ icon: Icon, children, lm, right }) {
   );
 }
 
-function SlotEditor({ open, slot, day, slots, lm, onClose, onSave, onClear }) {
+function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClose, onSave, onClear }) {
   const block = day.blocks[slot] || {};
   const [text, setText] = useState('');
   const [itemId, setItemId] = useState(null);
@@ -69,7 +87,26 @@ function SlotEditor({ open, slot, day, slots, lm, onClose, onSave, onClear }) {
   const endKey = slots[startIdx + length] ?? '24:00';
   const pending = day.brainDump.filter((i) => !i.done);
   const topIds = day.top3.filter(Boolean);
-  const sorted = [...pending].sort((a, b) => topIds.includes(b.id) - topIds.includes(a.id));
+  const picks = (item) => pickCount.get(item.text) || 0;
+  const sorted = [...pending].sort((a, b) => topIds.includes(b.id) - topIds.includes(a.id) || picks(b) - picks(a));
+
+  const chip = (item, suffix) => {
+    const sel = itemId === item.id;
+    return (
+      <button
+        key={item.id}
+        onClick={() => { setItemId(item.id); setText(item.text); }}
+        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+          sel
+            ? lm ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-violet-600 border-violet-600 text-white'
+            : lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'
+        }`}
+      >
+        {topIds.includes(item.id) && '⭐ '}{item.text}
+        {suffix && <span className="ml-1 opacity-60">{suffix}</span>}
+      </button>
+    );
+  };
 
   return (
     <BottomSheet open={open} onClose={onClose} title={`${slot} – ${endKey}`}>
@@ -77,22 +114,16 @@ function SlotEditor({ open, slot, day, slots, lm, onClose, onSave, onClear }) {
         {sorted.length > 0 && (
           <div>
             <p className={`text-xs mb-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>브레인 덤프에서 고르기</p>
+            <div className="flex flex-wrap gap-2">{sorted.map((item) => chip(item))}</div>
+          </div>
+        )}
+        {otherPending.length > 0 && (
+          <div>
+            <p className={`text-xs mb-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>다른 날 할 일</p>
             <div className="flex flex-wrap gap-2">
-              {sorted.map((item) => {
-                const sel = itemId === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { setItemId(item.id); setText(item.text); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                      sel
-                        ? lm ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-violet-600 border-violet-600 text-white'
-                        : lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'
-                    }`}
-                  >
-                    {topIds.includes(item.id) && '⭐ '}{item.text}
-                  </button>
-                );
+              {otherPending.map((item) => {
+                const [, m, d] = item.date.split('-').map(Number);
+                return chip(item, `${m}/${d}`);
               })}
             </div>
           </div>
@@ -141,7 +172,7 @@ function SlotEditor({ open, slot, day, slots, lm, onClose, onSave, onClear }) {
 export function TimeboxPlanner() {
   const { theme } = useTheme();
   const lm = theme === 'light';
-  const { loaded, settings, getDay, updateDay, saveSettings } = useTimebox();
+  const { loaded, settings, days, getDay, updateDay, saveSettings } = useTimebox();
 
   const today = toDateStr(new Date());
   const [date, setDate] = useState(today);
@@ -156,6 +187,26 @@ export function TimeboxPlanner() {
   const itemById = useMemo(() => Object.fromEntries(day.brainDump.map((i) => [i.id, i])), [day.brainDump]);
   const topIds = day.top3.filter(Boolean);
   const isToday = date === today;
+
+  const pickCount = useMemo(() => countPicks(days), [days]);
+
+  // 다른 날짜의 미완료 브레인 덤프 항목(같은 텍스트는 최신 날짜 것 하나만). 많이 고른 순 → 최신 날짜 순.
+  const otherPending = useMemo(() => {
+    const seen = new Set(day.brainDump.map((i) => i.text));
+    const items = [];
+    Object.keys(days)
+      .filter((d) => d !== date)
+      .sort()
+      .reverse()
+      .forEach((d) => {
+        (days[d].brainDump || []).forEach((i) => {
+          if (i.done || seen.has(i.text)) return;
+          seen.add(i.text);
+          items.push({ ...i, date: d });
+        });
+      });
+    return items.sort((a, b) => (pickCount.get(b.text) || 0) - (pickCount.get(a.text) || 0));
+  }, [days, date, day.brainDump, pickCount]);
 
   useEffect(() => { setReflection(day.reflection || ''); }, [date, day.reflection]);
 
@@ -437,6 +488,8 @@ export function TimeboxPlanner() {
         slot={editingSlot}
         day={day}
         slots={slots}
+        otherPending={otherPending}
+        pickCount={pickCount}
         lm={lm}
         onClose={() => setEditingSlot(null)}
         onSave={saveSlots}

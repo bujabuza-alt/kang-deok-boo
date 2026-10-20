@@ -87,5 +87,5 @@ export function useTimebox() {
     write(SETTINGS_KEY, next);
   }, []);
 
-  return { loaded, settings, getDay, updateDay, saveSettings };
+  return { loaded, settings, days, getDay, updateDay, saveSettings };
 }
