@@ -10,7 +10,15 @@
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useMemo } from 'react';
 import {
-  ChevronLeft, ChevronRight, Plus, Star, Trash2, Check, Settings2, ArrowRightToLine, Brain, Target, Clock, NotebookPen,
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  ChevronLeft, ChevronRight, ChevronDown, Plus, Star, Trash2, Check, Settings2, ArrowRightToLine, Brain, Target, Clock,
+  NotebookPen, GripVertical,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useTimebox, slotKeys, currentSlotKey } from '@/hooks/useTimebox';
@@ -18,6 +26,7 @@ import { Card } from './ui/Card';
 import { BottomSheet } from './ui/BottomSheet';
 import { Button } from './ui/Button';
 import { IconButton } from './ui/IconButton';
+import { TimeboxNotifySettings } from './TimeboxNotifySettings';
 
 const DURATIONS = [1, 2, 3, 4]; // 30분 단위 칸 수
 
@@ -65,6 +74,73 @@ function SectionTitle({ icon: Icon, children, lm, right }) {
       </h3>
       {right}
     </div>
+  );
+}
+
+// 완료 체크박스. 보이는 박스는 작아도 터치 영역은 44px로 넓혀, 옆의 할 일이나
+// 타임박스 칸이 대신 눌리지 않게 합니다.
+function CheckBox({ done, onClick, lm, className = 'min-w-11 min-h-11 -ml-2', boxClassName = 'w-6 h-6' }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={done ? '완료 취소' : '완료'}
+      className={`flex items-center justify-center shrink-0 ${className}`}
+    >
+      <span
+        className={`${boxClassName} rounded-md border-2 flex items-center justify-center ${
+          done ? 'bg-emerald-500 border-emerald-500 text-white' : lm ? 'bg-white border-slate-300' : 'bg-gray-900 border-gray-600'
+        }`}
+      >
+        {done && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+      </span>
+    </button>
+  );
+}
+
+function DumpItem({ item, isTop, topFull, lm, muted, onToggle, onTop, onDelete, dragHandle }) {
+  return (
+    <>
+      {dragHandle}
+      <CheckBox done={item.done} onClick={onToggle} lm={lm} className={`min-w-11 min-h-11 ${dragHandle ? '-mx-1' : '-ml-2'}`} />
+      <span className={`flex-1 text-sm truncate ${item.done ? `line-through ${muted}` : lm ? 'text-slate-700' : 'text-gray-200'}`}>{item.text}</span>
+      <IconButton
+        icon={Star}
+        label={isTop ? 'Top 3에서 빼기' : 'Top 3로 지정'}
+        tone={isTop ? 'active' : 'default'}
+        filled={isTop}
+        disabled={!isTop && topFull}
+        className="disabled:opacity-30"
+        onClick={onTop}
+      />
+      <IconButton icon={Trash2} label="삭제" tone="danger" onClick={onDelete} />
+    </>
+  );
+}
+
+// 미완료 항목은 왼쪽 손잡이를 끌어 순서를 바꿉니다(손잡이에서만 드래그 → 스크롤과 충돌 없음).
+function SortableDumpItem({ lm, ...props }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id });
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined }}
+      className={`relative flex items-center gap-1 rounded-xl ${isDragging ? (lm ? 'bg-white shadow-lg' : 'bg-gray-800 shadow-lg') : ''}`}
+    >
+      <DumpItem
+        lm={lm}
+        {...props}
+        dragHandle={
+          <button
+            {...attributes}
+            {...listeners}
+            className={`flex items-center justify-center w-6 min-h-11 -ml-1 touch-none cursor-grab active:cursor-grabbing ${lm ? 'text-slate-300' : 'text-gray-600'}`}
+            aria-label="드래그하여 순서 변경"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        }
+      />
+    </li>
   );
 }
 
@@ -181,6 +257,13 @@ export function TimeboxPlanner() {
   const [showSettings, setShowSettings] = useState(false);
   const [reflection, setReflection] = useState('');
   const [nowSlot, setNowSlot] = useState(currentSlotKey());
+  const [showDone, setShowDone] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const day = getDay(date);
   const slots = useMemo(() => slotKeys(settings), [settings]);
@@ -231,6 +314,14 @@ export function TimeboxPlanner() {
       brainDump: d.brainDump.filter((i) => i.id !== id),
       top3: d.top3.map((t) => (t === id ? null : t)),
     }));
+
+  const reorderItems = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    updateDay(date, (d) => {
+      const ids = d.brainDump.map((i) => i.id);
+      return { ...d, brainDump: arrayMove(d.brainDump, ids.indexOf(active.id), ids.indexOf(over.id)) };
+    });
+  };
 
   const toggleTop = (id) =>
     updateDay(date, (d) => {
@@ -290,7 +381,18 @@ export function TimeboxPlanner() {
   const muted = lm ? 'text-slate-400' : 'text-gray-500';
   const hours = [];
   for (let i = 0; i < slots.length; i += 2) hours.push([slots[i], slots[i + 1]]);
-  const pendingCount = day.brainDump.filter((i) => !i.done).length;
+  const pendingItems = day.brainDump.filter((i) => !i.done);
+  const doneItems = day.brainDump.filter((i) => i.done);
+  const pendingCount = pendingItems.length;
+  const dumpItemProps = (item) => ({
+    item,
+    isTop: topIds.includes(item.id),
+    topFull: topIds.length >= 3,
+    muted,
+    onToggle: () => toggleItem(item.id),
+    onTop: () => toggleTop(item.id),
+    onDelete: () => deleteItem(item.id),
+  });
 
   return (
     <div className="max-w-3xl mx-auto w-full px-4 py-4 space-y-3">
@@ -308,27 +410,30 @@ export function TimeboxPlanner() {
       </div>
 
       {showSettings && (
-        <Card className="flex items-center gap-2 text-sm">
-          <span className={muted}>표시 시간</span>
-          <select
-            value={settings.startHour}
-            onChange={(e) => saveSettings({ ...settings, startHour: Number(e.target.value) })}
-            className={`rounded-lg px-2 py-1 border ${lm ? 'bg-white border-slate-200' : 'bg-gray-800 border-gray-700 text-white'}`}
-          >
-            {Array.from({ length: 24 }, (_, h) => h).filter((h) => h < settings.endHour).map((h) => (
-              <option key={h} value={h}>{h}시</option>
-            ))}
-          </select>
-          <span className={muted}>~</span>
-          <select
-            value={settings.endHour}
-            onChange={(e) => saveSettings({ ...settings, endHour: Number(e.target.value) })}
-            className={`rounded-lg px-2 py-1 border ${lm ? 'bg-white border-slate-200' : 'bg-gray-800 border-gray-700 text-white'}`}
-          >
-            {Array.from({ length: 24 }, (_, h) => h + 1).filter((h) => h > settings.startHour).map((h) => (
-              <option key={h} value={h}>{h}시</option>
-            ))}
-          </select>
+        <Card>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={muted}>표시 시간</span>
+            <select
+              value={settings.startHour}
+              onChange={(e) => saveSettings({ ...settings, startHour: Number(e.target.value) })}
+              className={`rounded-lg px-2 py-1 border ${lm ? 'bg-white border-slate-200' : 'bg-gray-800 border-gray-700 text-white'}`}
+            >
+              {Array.from({ length: 24 }, (_, h) => h).filter((h) => h < settings.endHour).map((h) => (
+                <option key={h} value={h}>{h}시</option>
+              ))}
+            </select>
+            <span className={muted}>~</span>
+            <select
+              value={settings.endHour}
+              onChange={(e) => saveSettings({ ...settings, endHour: Number(e.target.value) })}
+              className={`rounded-lg px-2 py-1 border ${lm ? 'bg-white border-slate-200' : 'bg-gray-800 border-gray-700 text-white'}`}
+            >
+              {Array.from({ length: 24 }, (_, h) => h + 1).filter((h) => h > settings.startHour).map((h) => (
+                <option key={h} value={h}>{h}시</option>
+              ))}
+            </select>
+          </div>
+          <TimeboxNotifySettings settings={settings} saveSettings={saveSettings} lm={lm} />
         </Card>
       )}
 
@@ -339,19 +444,11 @@ export function TimeboxPlanner() {
           {day.top3.map((id, idx) => {
             const item = id && itemById[id];
             return (
-              <li key={idx} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${lm ? 'bg-amber-50/60' : 'bg-amber-950/20'}`}>
+              <li key={idx} className={`flex items-center gap-3 px-3 py-1 min-h-[3.25rem] rounded-xl ${lm ? 'bg-amber-50/60' : 'bg-amber-950/20'}`}>
                 <span className="text-sm font-black text-amber-500 w-4">{idx + 1}</span>
                 {item ? (
                   <>
-                    <button
-                      onClick={() => toggleItem(item.id)}
-                      aria-label={item.done ? '완료 취소' : '완료'}
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
-                        item.done ? 'bg-emerald-500 border-emerald-500 text-white' : lm ? 'border-slate-300' : 'border-gray-600'
-                      }`}
-                    >
-                      {item.done && <Check className="w-3.5 h-3.5" />}
-                    </button>
+                    <CheckBox done={item.done} onClick={() => toggleItem(item.id)} lm={lm} />
                     <span className={`flex-1 text-sm ${item.done ? `line-through ${muted}` : lm ? 'text-slate-800' : 'text-gray-100'}`}>{item.text}</span>
                   </>
                 ) : (
@@ -379,35 +476,38 @@ export function TimeboxPlanner() {
         {day.brainDump.length === 0 ? (
           <p className={`text-xs text-center py-3 ${muted}`}>머릿속에 있는 일을 전부 꺼내 적는 것부터 시작해요</p>
         ) : (
-          <ul className="space-y-1">
-            {day.brainDump.map((item) => {
-              const isTop = topIds.includes(item.id);
-              return (
-                <li key={item.id} className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleItem(item.id)}
-                    aria-label={item.done ? '완료 취소' : '완료'}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${
-                      item.done ? 'bg-emerald-500 border-emerald-500 text-white' : lm ? 'border-slate-300' : 'border-gray-600'
-                    }`}
-                  >
-                    {item.done && <Check className="w-3.5 h-3.5" />}
-                  </button>
-                  <span className={`flex-1 text-sm truncate ${item.done ? `line-through ${muted}` : lm ? 'text-slate-700' : 'text-gray-200'}`}>{item.text}</span>
-                  <IconButton
-                    icon={Star}
-                    label={isTop ? 'Top 3에서 빼기' : 'Top 3로 지정'}
-                    tone={isTop ? 'active' : 'default'}
-                    filled={isTop}
-                    disabled={!isTop && topIds.length >= 3}
-                    className="disabled:opacity-30"
-                    onClick={() => toggleTop(item.id)}
-                  />
-                  <IconButton icon={Trash2} label="삭제" tone="danger" onClick={() => deleteItem(item.id)} />
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={reorderItems}>
+              <SortableContext items={pendingItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                <ul>
+                  {pendingItems.map((item) => (
+                    <SortableDumpItem key={item.id} lm={lm} {...dumpItemProps(item)} />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+            {doneItems.length > 0 && (
+              <>
+                <button
+                  onClick={() => setShowDone((v) => !v)}
+                  aria-expanded={showDone}
+                  className={`flex items-center gap-1 min-h-11 text-xs font-medium ${muted}`}
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showDone ? '' : '-rotate-90'}`} />
+                  완료 {doneItems.length}개
+                </button>
+                {showDone && (
+                  <ul>
+                    {doneItems.map((item) => (
+                      <li key={item.id} className="flex items-center gap-1 pl-5">
+                        <DumpItem lm={lm} {...dumpItemProps(item)} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </>
         )}
       </Card>
 
@@ -437,7 +537,7 @@ export function TimeboxPlanner() {
                     <button
                       onClick={() => setEditingSlot(key)}
                       aria-label={`${key} ${block?.text || '비어 있음'}`}
-                      className={`w-full h-full min-h-11 text-left px-2 py-1.5 text-xs ${
+                      className={`w-full h-full min-h-11 text-left pl-2 ${block ? 'pr-10' : 'pr-2'} py-1.5 text-xs ${
                         block
                           ? isTopBlock
                             ? lm ? 'bg-amber-50 text-amber-800' : 'bg-amber-950/30 text-amber-200'
@@ -448,15 +548,13 @@ export function TimeboxPlanner() {
                       {block?.text}
                     </button>
                     {block && (
-                      <button
+                      <CheckBox
+                        done={block.done}
                         onClick={() => toggleSlotDone(key)}
-                        aria-label={block.done ? '완료 취소' : '완료'}
-                        className={`absolute top-1 right-1 w-4 h-4 rounded border flex items-center justify-center ${
-                          block.done ? 'bg-emerald-500 border-emerald-500 text-white' : lm ? 'bg-white border-slate-300' : 'bg-gray-900 border-gray-600'
-                        }`}
-                      >
-                        {block.done && <Check className="w-3 h-3" />}
-                      </button>
+                        lm={lm}
+                        className="absolute top-0 right-0 w-10 h-11"
+                        boxClassName="w-5 h-5"
+                      />
                     )}
                   </div>
                 );

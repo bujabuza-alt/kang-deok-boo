@@ -102,3 +102,31 @@ self.addEventListener('message', (event) => {
     event.source?.postMessage({ type: 'BUILD_ID', buildId: BUILD_ID });
   }
 });
+
+// ── push: 알림 서버(worker/)가 보낸 타임박스 알림 표시 ─────────────────────
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data?.text() };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || '강덕부', {
+      body: data.body || '',
+      tag: data.tag,
+      icon: `${self.registration.scope}icon.svg`,
+    })
+  );
+});
+
+// ── notificationclick: 열린 앱이 있으면 앞으로, 없으면 새로 열기 ─────────────
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const client = clients.find((c) => c.url.startsWith(self.registration.scope));
+      return client ? client.focus() : self.clients.openWindow(self.registration.scope);
+    })
+  );
+});

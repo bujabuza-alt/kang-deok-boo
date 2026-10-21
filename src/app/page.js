@@ -7,6 +7,7 @@ import { HomeDashboard } from '@/components/HomeDashboard';
 import { MoreMenu, FEATURE_COMPONENTS } from '@/components/MoreMenu';
 import { BottomNav } from '@/components/BottomNav';
 import { TimeboxPlanner } from '@/components/TimeboxPlanner';
+import { PushScheduler } from '@/components/PushScheduler';
 import { useReminders } from '@/hooks/useReminders';
 import { useNavTabs } from '@/hooks/useNavTabs';
 import { useTheme } from '@/context/ThemeContext';
@@ -106,6 +107,8 @@ export default function HomePage() {
       </main>
 
       <BottomNav tabs={navTabs} activeTab={activeTab} onTabChange={handleTabChange} />
+      {/* 타임박스 알림 일정을 알림 서버에 올림(화면 없음) */}
+      <PushScheduler />
     </div>
   );
 }
