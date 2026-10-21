@@ -7,7 +7,7 @@
 //                           blocks:{ 'HH:MM': { text, itemId?, done } }, reflection } }
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
-import { pushKey } from '@/lib/sync';
+import { pushKey, SYNC_EVENT } from '@/lib/sync';
 import { useSyncListener } from '@/hooks/useSyncListener';
 
 const TIMEBOX_KEY = 'kang-deok-boo-timebox';
@@ -45,6 +45,9 @@ function write(key, value) {
     const json = JSON.stringify(value);
     localStorage.setItem(key, json);
     pushKey(key, json);
+    // 타임박스 탭과 알림 일정(PushScheduler)이 서로 다른 훅 인스턴스이므로,
+    // 같은 기기 안에서도 동기화 이벤트를 흘려 즉시 다시 읽도록 합니다.
+    window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: { key } }));
   } catch (e) {
     console.error(`Failed to save ${key}:`, e);
   }

@@ -19,3 +19,7 @@ yarn-error.log*
 
 # Vercel
 .vercel
+
+# Cloudflare Worker 로컬 상태
+.wrangler/
+.dev.vars

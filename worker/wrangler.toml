@@ -1,0 +1,19 @@
+# 강덕부 알림 서버(Cloudflare Worker). 설정 방법: docs/PUSH_SETUP.md
+name = "kang-deok-boo-push"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# 1분마다 보낼 시각이 된 알림을 전송
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kang-deok-boo-push"
+# GitHub Actions가 D1_DATABASE_ID 시크릿으로 바꿔 넣습니다(로컬 배포 시 직접 입력).
+database_id = "D1_DATABASE_ID_PLACEHOLDER"
+
+[vars]
+# 일정을 올릴 수 있는 앱 주소(쉼표로 여러 개)
+ALLOWED_ORIGINS = "https://bujabuza-alt.github.io,http://localhost:3000"
+# VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT 는 시크릿으로 등록
