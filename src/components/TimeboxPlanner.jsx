@@ -333,6 +333,17 @@ export function TimeboxPlanner() {
       return { ...d, top3 };
     });
 
+  // 다른 날 할 일을 이 날 브레인 덤프로 복사하고 Top 3 빈칸에 지정합니다(원래 날 기록은 그대로).
+  const addOtherToTop = (item) =>
+    updateDay(date, (d) => {
+      const empty = d.top3.indexOf(null);
+      if (empty === -1) return d;
+      const copy = { id: newId(), text: item.text, done: false };
+      const top3 = [...d.top3];
+      top3[empty] = copy.id;
+      return { ...d, brainDump: [...d.brainDump, copy], top3 };
+    });
+
   const saveSlots = (keys, block) => {
     updateDay(date, (d) => {
       const blocks = { ...d.blocks };
@@ -458,6 +469,25 @@ export function TimeboxPlanner() {
             );
           })}
         </ol>
+        {topIds.length < 3 && otherPending.length > 0 && (
+          <div className="mt-3">
+            <p className={`text-xs mb-2 ${muted}`}>다른 날 할 일에서 고르기</p>
+            <div className="flex flex-wrap gap-2">
+              {otherPending.map((item) => {
+                const [, m, d] = item.date.split('-').map(Number);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => addOtherToTop(item)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'}`}
+                  >
+                    {item.text}<span className="ml-1 opacity-60">{m}/{d}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* 브레인 덤프 */}
