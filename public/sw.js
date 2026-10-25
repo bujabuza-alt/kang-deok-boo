@@ -8,8 +8,9 @@ const BUILD_ID = 'BUILD_ID_PLACEHOLDER';
 const CACHE_NAME = `kang-deok-boo-${BUILD_ID}`;
 
 // HTML 탐색 요청은 프리캐시하지 않음 (Network-First로 항상 최신 버전 보장)
+// basePath(GitHub Pages의 /kang-deok-boo)를 따라가도록 SW 스코프 기준 경로를 씁니다.
 const PRECACHE_ASSETS = [
-  '/icon.svg',
+  new URL('icon.svg', self.registration.scope).href,
 ];
 
 // ── install: 정적 에셋 프리캐시 + 즉시 활성화 대기 ───────────────────────────
