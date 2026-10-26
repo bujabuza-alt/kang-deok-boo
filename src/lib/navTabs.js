@@ -6,7 +6,7 @@
 
 export const MORE_TAB_ID = 'more';
 export const MAX_NAV_TABS = 5; // '더보기' 포함
-export const DEFAULT_NAV_TABS = ['home', 'todo', 'expense', 'timebox', MORE_TAB_ID];
+export const DEFAULT_NAV_TABS = ['home', 'expense', 'timebox', 'workout', MORE_TAB_ID];
 
 // saved: 저장된 id 배열, allowedIds: 하단 탭에 올릴 수 있는 id('더보기' 제외)
 export function normalizeNavTabs(saved, allowedIds) {

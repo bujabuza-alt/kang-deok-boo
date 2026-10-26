@@ -1,8 +1,8 @@
 'use client';
 // ──────────────────────────────────────────────────────────────────────────────
 // components/ui/ConfirmDialog.jsx
-// 삭제 등 되돌릴 수 없는 동작을 확인받는 다이얼로그. TodoApp/HabitTracker/
-// WishlistApp/MemoApp에 거의 동일하게 복붙되어 있던 확인창을 표준화합니다.
+// 삭제 등 되돌릴 수 없는 동작을 확인받는 다이얼로그. 화면마다
+// (WishlistApp/MemoApp 등) 거의 동일하게 복붙되어 있던 확인창을 표준화합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useTheme } from '@/context/ThemeContext';
 import { Modal } from './Modal';

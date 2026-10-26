@@ -4,7 +4,7 @@
 // 새 카드가 추가되면 저장된 구성 끝에 자동으로 붙습니다.
 // ──────────────────────────────────────────────────────────────────────────────
 
-export const HOME_CARD_IDS = ['todo', 'reminders', 'expense', 'timebox', 'shortcuts'];
+export const HOME_CARD_IDS = ['expense', 'timebox', 'shortcuts'];
 
 export const DEFAULT_HOME_LAYOUT = {
   cards: HOME_CARD_IDS.map((id) => ({ id, visible: true, size: 'full' })),

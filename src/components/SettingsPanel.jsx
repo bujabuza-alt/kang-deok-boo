@@ -4,10 +4,23 @@
 // '설정' 화면. 테마, 하단 탭 구성, 지출 관리(결제수단/프리셋/카테고리), 기기 동기화,
 // 전체 데이터 백업/복원, 앱 정보를 한 화면에 모읍니다. 원래 지출 화면 안에
 // 따로 있던 설정 탭(테마 3종·지출 전용 백업)을 이 화면 하나로 통합했습니다.
+// 각 섹션은 제목을 눌러 접고 펼 수 있고, '순서 편집'으로 순서를 바꿀 수 있습니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
-import { DatabaseBackup, Download, Upload, Sun, Moon, Info, Wallet, RefreshCw } from 'lucide-react';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  DatabaseBackup, Download, Upload, Sun, Moon, Info, Wallet, RefreshCw, Palette, PanelBottom, Link2,
+  ChevronDown, GripVertical, SlidersHorizontal,
+} from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useSettingsLayout } from '@/hooks/useSettingsLayout';
+import { DEFAULT_SETTINGS_LAYOUT } from '@/lib/settingsLayout';
 import { ls, exportJSON } from '@/expense/utils';
 import { SYNC_KEYS } from '@/lib/syncKeys';
 import { SyncSettings } from '@/components/SyncSettings';
@@ -23,6 +36,83 @@ const BACKUP_KEYS = SYNC_KEYS;
 const sectionCls = (lm) => `rounded-2xl p-4 space-y-3 ${lm ? 'bg-white shadow-sm border border-slate-100' : 'bg-gray-900'}`;
 const h3Cls = (lm) => `text-sm font-bold ${lm ? 'text-slate-800' : 'text-gray-200'}`;
 const mutedCls = (lm) => `text-xs ${lm ? 'text-slate-400' : 'text-gray-500'}`;
+
+const SECTION_META = {
+  theme: { icon: Palette, title: '테마' },
+  navTabs: { icon: PanelBottom, title: '하단 탭 구성' },
+  expense: { icon: Wallet, title: '지출 관리' },
+  sync: { icon: Link2, title: '기기 동기화' },
+  data: { icon: DatabaseBackup, title: '데이터 관리' },
+  appInfo: { icon: Info, title: '앱 정보' },
+};
+
+// 제목 줄을 누르면 접고 펼치는 섹션 틀.
+function CollapsibleSection({ id, lm, collapsed, onToggle, children }) {
+  const { icon: Icon, title } = SECTION_META[id];
+  return (
+    <section className={sectionCls(lm)}>
+      <button onClick={onToggle} aria-expanded={!collapsed} className="w-full flex items-center gap-2 min-h-11 -my-2 text-left">
+        <Icon className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
+        <h3 className={`flex-1 ${h3Cls(lm)}`}>{title}</h3>
+        <ChevronDown className={`w-4 h-4 transition-transform ${collapsed ? '-rotate-90' : ''} ${lm ? 'text-slate-400' : 'text-gray-500'}`} />
+      </button>
+      {!collapsed && children}
+    </section>
+  );
+}
+
+function SortableSectionRow({ id, lm }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { icon: Icon, title } = SECTION_META[id];
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined }}
+      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${lm ? 'bg-white border-slate-100' : 'bg-gray-900 border-gray-800'} ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className={`p-1 touch-none cursor-grab active:cursor-grabbing ${lm ? 'text-slate-300' : 'text-gray-600'}`}
+        aria-label="드래그하여 순서 변경"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <Icon className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
+      <span className={`flex-1 text-sm font-medium ${lm ? 'text-slate-700' : 'text-gray-200'}`}>{title}</span>
+    </li>
+  );
+}
+
+function SectionOrderEditor({ lm, layout, onChange }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    onChange({ ...layout, order: arrayMove(layout.order, layout.order.indexOf(active.id), layout.order.indexOf(over.id)) });
+  };
+  return (
+    <div className="space-y-2">
+      <p className={mutedCls(lm)}>드래그로 섹션 순서를 바꾸세요.</p>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={layout.order} strategy={verticalListSortingStrategy}>
+          <ul className="space-y-2">
+            {layout.order.map((id) => <SortableSectionRow key={id} id={id} lm={lm} />)}
+          </ul>
+        </SortableContext>
+      </DndContext>
+      <button
+        onClick={() => onChange({ ...layout, order: DEFAULT_SETTINGS_LAYOUT.order })}
+        className={`w-full text-xs py-2 rounded-xl ${lm ? 'bg-slate-100 text-slate-500' : 'bg-gray-800 text-gray-400'}`}
+      >
+        기본 순서로
+      </button>
+    </div>
+  );
+}
 
 function today() {
   const d = new Date();
@@ -43,6 +133,8 @@ export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
   const lm = theme === 'light';
   const [msg, setMsg] = useState(null);
+  const { layout, saveLayout } = useSettingsLayout();
+  const [editingOrder, setEditingOrder] = useState(false);
 
   const {
     loaded: expenseLoaded,
@@ -133,63 +225,48 @@ export function SettingsPanel() {
     input.click();
   };
 
-  return (
-    <div className="max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-4">
-      <section className={sectionCls(lm)}>
-        <h3 className={h3Cls(lm)}>테마</h3>
-        <div className="flex gap-2">
-          {[
-            { id: 'light', label: '라이트', Icon: Sun },
-            { id: 'dark', label: '다크', Icon: Moon },
-          ].map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTheme(id)}
-              className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-xs font-bold transition-all ${
-                theme === id
-                  ? lm ? 'bg-indigo-50 border-indigo-400 text-indigo-600' : 'bg-gray-800 border-violet-500 text-violet-400'
-                  : lm ? 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300' : 'bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-600'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <NavTabsSection lm={lm} sectionCls={sectionCls} h3Cls={h3Cls} mutedCls={mutedCls} />
-
-      <section className={sectionCls(lm)}>
-        <div className="flex items-center gap-2">
-          <Wallet className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
-          <h3 className={h3Cls(lm)}>지출 관리</h3>
-        </div>
-        {expenseLoaded ? (
-          <div className="space-y-3">
-            <CategorySection
-              categories={categories}
-              onUpdate={setCategories}
-              onRename={renameCategory}
-              budgets={categoryBudgets}
-              onBudgetChange={setCategoryBudget}
-            />
-            <PaymentMethodsSection paymentMethods={paymentMethods} onUpdate={setPaymentMethods} />
-            <PresetsSection presets={presets} paymentMethods={paymentMethods} onUpdate={setPresets} />
-          </div>
-        ) : (
-          <p className={mutedCls(lm)}>불러오는 중...</p>
-        )}
-      </section>
-
-      <SyncSettings lm={lm} sectionCls={sectionCls} h3Cls={h3Cls} mutedCls={mutedCls} />
-
-      <section className={sectionCls(lm)}>
-        <div className="flex items-center gap-2">
-          <DatabaseBackup className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
-          <h3 className={h3Cls(lm)}>데이터 관리</h3>
-        </div>
-        <p className={mutedCls(lm)}>일정·메모·알림·위시리스트·습관·지출을 포함한 앱 전체 데이터를 한 번에 백업하거나 복원합니다.</p>
+  const sections = {
+    theme: (
+      <div className="flex gap-2">
+        {[
+          { id: 'light', label: '라이트', Icon: Sun },
+          { id: 'dark', label: '다크', Icon: Moon },
+        ].map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTheme(id)}
+            className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 text-xs font-bold transition-all ${
+              theme === id
+                ? lm ? 'bg-indigo-50 border-indigo-400 text-indigo-600' : 'bg-gray-800 border-violet-500 text-violet-400'
+                : lm ? 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300' : 'bg-gray-800 border-gray-700 text-gray-500 hover:border-gray-600'
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            {label}
+          </button>
+        ))}
+      </div>
+    ),
+    navTabs: <NavTabsSection lm={lm} mutedCls={mutedCls} />,
+    expense: expenseLoaded ? (
+      <div className="space-y-3">
+        <CategorySection
+          categories={categories}
+          onUpdate={setCategories}
+          onRename={renameCategory}
+          budgets={categoryBudgets}
+          onBudgetChange={setCategoryBudget}
+        />
+        <PaymentMethodsSection paymentMethods={paymentMethods} onUpdate={setPaymentMethods} />
+        <PresetsSection presets={presets} paymentMethods={paymentMethods} onUpdate={setPresets} />
+      </div>
+    ) : (
+      <p className={mutedCls(lm)}>불러오는 중...</p>
+    ),
+    sync: <SyncSettings lm={lm} mutedCls={mutedCls} />,
+    data: (
+      <>
+        <p className={mutedCls(lm)}>타임박스·메모·위시리스트·운동·지출을 포함한 앱 전체 데이터를 한 번에 백업하거나 복원합니다.</p>
         <div className="flex gap-2">
           <button
             onClick={doFullExport}
@@ -239,9 +316,42 @@ export function SettingsPanel() {
             {msg.text}
           </p>
         )}
-      </section>
+      </>
+    ),
+    appInfo: <AppInfoSection lm={lm} />,
+  };
 
-      <AppInfoSection lm={lm} />
+  const toggleCollapsed = (id) =>
+    saveLayout({
+      ...layout,
+      collapsed: layout.collapsed.includes(id) ? layout.collapsed.filter((c) => c !== id) : [...layout.collapsed, id],
+    });
+
+  return (
+    <div className="max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-4">
+      <div className="flex justify-end -mt-2 -mb-2">
+        <button
+          onClick={() => setEditingOrder((v) => !v)}
+          className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg ${
+            editingOrder
+              ? lm ? 'bg-indigo-600 text-white' : 'bg-violet-600 text-white'
+              : lm ? 'text-slate-500 hover:bg-slate-100' : 'text-gray-400 hover:bg-gray-800'
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          {editingOrder ? '완료' : '순서 편집'}
+        </button>
+      </div>
+
+      {editingOrder ? (
+        <SectionOrderEditor lm={lm} layout={layout} onChange={saveLayout} />
+      ) : (
+        layout.order.map((id) => (
+          <CollapsibleSection key={id} id={id} lm={lm} collapsed={layout.collapsed.includes(id)} onToggle={() => toggleCollapsed(id)}>
+            {sections[id]}
+          </CollapsibleSection>
+        ))
+      )}
     </div>
   );
 }
@@ -271,11 +381,7 @@ function AppInfoSection({ lm }) {
   const isMatch = swBuildId && swBuildId !== 'SW 없음' && swBuildId === buildId;
 
   return (
-    <section className={sectionCls(lm)}>
-      <div className="flex items-center gap-2">
-        <Info className={`w-4 h-4 ${lm ? 'text-slate-400' : 'text-gray-500'}`} />
-        <h3 className={h3Cls(lm)}>앱 정보</h3>
-      </div>
+    <>
       <p className={mutedCls(lm)}>강덕부 · 빌드 {buildId}</p>
       <button
         onClick={checkVersion}
@@ -289,6 +395,6 @@ function AppInfoSection({ lm }) {
           {isMatch ? '✓ 최신 버전입니다' : swBuildId === 'SW 없음' ? '서비스 워커가 아직 등록되지 않았습니다' : `⚠ 새 버전이 있어요 (${swBuildId})`}
         </p>
       )}
-    </section>
+    </>
   );
 }

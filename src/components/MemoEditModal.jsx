@@ -65,7 +65,7 @@ export function MemoEditModal({ memo, onSave, onClose }) {
       <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
           <input
             type="text"
-            autoFocus
+            autoFocus={!memo}
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="제목"

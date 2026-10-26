@@ -30,6 +30,21 @@ export function currentSlotKey(date = new Date()) {
   return `${String(date.getHours()).padStart(2, '0')}:${date.getMinutes() < 30 ? '00' : '30'}`;
 }
 
+// 칸 완료를 토글하고, 그 칸과 같은 항목인 브레인 덤프 항목의 완료 여부를 맞춥니다.
+// 같은 항목 = itemId가 같거나 텍스트가 같음(다른 날 할 일을 고르면 itemId가 다른 날 것이라서).
+// 그 항목으로 배치된 그날의 칸이 모두 완료여야 완료, 하나라도 미완료면 미완료입니다.
+export function toggleBlockDone(day, key) {
+  const blocks = { ...day.blocks, [key]: { ...day.blocks[key], done: !day.blocks[key].done } };
+  const toggled = blocks[key];
+  const matches = (item, block) => item.id === block.itemId || item.text === block.text;
+  const brainDump = day.brainDump.map((item) => {
+    if (!matches(item, toggled)) return item;
+    const done = Object.values(blocks).filter((b) => matches(item, b)).every((b) => b.done);
+    return done === item.done ? item : { ...item, done };
+  });
+  return { ...day, blocks, brainDump };
+}
+
 function read(key, fallback) {
   try {
     const stored = localStorage.getItem(key);

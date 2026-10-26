@@ -19,7 +19,8 @@ import {
   pullAll,
 } from '@/lib/sync';
 
-export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
+// 섹션 틀(제목·접기)은 SettingsPanel이 그리고, 여기서는 본문만 그립니다.
+export function SyncSettings({ lm, mutedCls }) {
   const [code, setCode] = useState(null);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -91,12 +92,7 @@ export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
   };
 
   return (
-    <section className={sectionCls(lm)}>
-      <div className="flex items-center gap-2">
-        <Link2 className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
-        <h3 className={h3Cls(lm)}>기기 동기화</h3>
-      </div>
-
+    <>
       {!isSyncConfigured ? (
         <p className={mutedCls(lm)}>
           동기화 백엔드가 아직 구성되지 않았습니다. 관리자가 Firebase 설정을 완료하면 이 기능을 사용할 수 있습니다.
@@ -165,6 +161,6 @@ export function SyncSettings({ lm, sectionCls, h3Cls, mutedCls }) {
           {msg.text}
         </p>
       )}
-    </section>
+    </>
   );
 }
