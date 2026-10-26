@@ -2,48 +2,31 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // components/MoreMenu.jsx
 // 하단 탭바에 올리지 않은 나머지 화면을 모아 보여주는 화면. 기능 타일을 고르면
-// 같은 화면 안에서 해당 기능을 렌더링하고, 주 화면(홈/일정 등) 타일은 그 탭으로 이동합니다.
+// 같은 화면 안에서 해당 기능을 렌더링하고, 주 화면(홈/지출 등) 타일은 그 탭으로 이동합니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { ChevronLeft } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { useReminders } from '@/hooks/useReminders';
-import { ReminderCenter } from './ReminderCenter';
 import { MealMenu } from './MealMenu';
 import { MemoApp } from './MemoApp';
 import { WishlistApp } from './WishlistApp';
-import { HabitTracker } from './HabitTracker';
+import { WorkoutApp } from './WorkoutApp';
 import { SettingsPanel } from './SettingsPanel';
 import { IconButton } from './ui/IconButton';
 import { MORE_FEATURES, MAIN_TABS } from './navItems';
 
 export { MORE_FEATURES };
 
-function ReminderFeature() {
-  const { reminders, loaded, addReminder, updateReminder, deleteReminder, toggleReminder } = useReminders();
-  return (
-    <ReminderCenter
-      reminders={reminders}
-      loaded={loaded}
-      addReminder={addReminder}
-      updateReminder={updateReminder}
-      deleteReminder={deleteReminder}
-      toggleReminder={toggleReminder}
-    />
-  );
-}
-
 // 하단 탭에 직접 올린 기능은 page.js가 이 목록으로 바로 렌더링합니다.
 export const FEATURE_COMPONENTS = {
-  reminders: ReminderFeature,
   meal: MealMenu,
   memo: MemoApp,
   wishlist: WishlistApp,
-  habits: HabitTracker,
+  workout: WorkoutApp,
   settings: SettingsPanel,
 };
 
-// feature/onSelectFeature로 상위(page.js)가 제어합니다 — 헤더의 알림 벨이나
-// 홈 대시보드의 바로가기 카드에서도 특정 기능을 바로 열 수 있어야 하기 때문입니다.
+// feature/onSelectFeature로 상위(page.js)가 제어합니다 — 홈 대시보드의
+// 바로가기 카드에서도 특정 기능을 바로 열 수 있어야 하기 때문입니다.
 export function MoreMenu({ feature, onSelectFeature, navTabs = [], onGoTab }) {
   const { theme } = useTheme();
   const lm = theme === 'light';

@@ -21,7 +21,7 @@ import {
   NotebookPen, GripVertical,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { useTimebox, slotKeys, currentSlotKey } from '@/hooks/useTimebox';
+import { useTimebox, slotKeys, currentSlotKey, toggleBlockDone } from '@/hooks/useTimebox';
 import { Card } from './ui/Card';
 import { BottomSheet } from './ui/BottomSheet';
 import { Button } from './ui/Button';
@@ -53,13 +53,19 @@ function prevSlotKey(key) {
   return m === 30 ? `${String(h).padStart(2, '0')}:00` : `${String(h - 1).padStart(2, '0')}:30`;
 }
 
-// 할 일 텍스트별로 타임박스에 배치된 횟수. 한 번에 여러 칸을 채운 경우(연속된 같은 텍스트)는 1회로 셉니다.
+// 할 일 텍스트별로 타임박스에 배치되거나 Top 3로 지정된 횟수.
+// 한 번에 여러 칸을 채운 경우(연속된 같은 텍스트)는 1회로 셉니다.
 function countPicks(days) {
   const counts = new Map();
-  Object.values(days).forEach(({ blocks = {} }) => {
+  const add = (text) => counts.set(text, (counts.get(text) || 0) + 1);
+  Object.values(days).forEach(({ blocks = {}, brainDump = [], top3 = [] }) => {
     Object.entries(blocks).forEach(([key, block]) => {
       if (blocks[prevSlotKey(key)]?.text === block.text) return;
-      counts.set(block.text, (counts.get(block.text) || 0) + 1);
+      add(block.text);
+    });
+    top3.forEach((id) => {
+      const item = id && brainDump.find((i) => i.id === id);
+      if (item) add(item.text);
     });
   });
   return counts;
@@ -258,6 +264,7 @@ export function TimeboxPlanner() {
   const [reflection, setReflection] = useState('');
   const [nowSlot, setNowSlot] = useState(currentSlotKey());
   const [showDone, setShowDone] = useState(false);
+  const [editingOther, setEditingOther] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -344,6 +351,14 @@ export function TimeboxPlanner() {
       return { ...d, brainDump: [...d.brainDump, copy], top3 };
     });
 
+  // '다른 날 할 일' 목록의 숨김·접힘 상태는 타임박스 설정에 함께 저장합니다(기기 간 동기화).
+  const hiddenOther = settings.hiddenOther || [];
+  const toggleHiddenOther = (text) =>
+    saveSettings({
+      ...settings,
+      hiddenOther: hiddenOther.includes(text) ? hiddenOther.filter((t) => t !== text) : [...hiddenOther, text],
+    });
+
   const saveSlots = (keys, block) => {
     updateDay(date, (d) => {
       const blocks = { ...d.blocks };
@@ -362,8 +377,7 @@ export function TimeboxPlanner() {
     setEditingSlot(null);
   };
 
-  const toggleSlotDone = (key) =>
-    updateDay(date, (d) => ({ ...d, blocks: { ...d.blocks, [key]: { ...d.blocks[key], done: !d.blocks[key].done } } }));
+  const toggleSlotDone = (key) => updateDay(date, (d) => toggleBlockDone(d, key));
 
   // 끝내지 못한 브레인 덤프 항목을 다음 날로 복사합니다(Top 3 지정도 유지).
   // 오늘 기록은 그대로 남기고, 다음 날에 같은 내용이 이미 있으면 건너뜁니다.
@@ -395,10 +409,14 @@ export function TimeboxPlanner() {
   const pendingItems = day.brainDump.filter((i) => !i.done);
   const doneItems = day.brainDump.filter((i) => i.done);
   const pendingCount = pendingItems.length;
+  const topFull = topIds.length >= 3;
+  const otherCollapsed = settings.otherCollapsed;
+  const shownOther = otherPending.filter((i) => !hiddenOther.includes(i.text));
+  const visibleOther = editingOther ? otherPending : shownOther;
   const dumpItemProps = (item) => ({
     item,
     isTop: topIds.includes(item.id),
-    topFull: topIds.length >= 3,
+    topFull,
     muted,
     onToggle: () => toggleItem(item.id),
     onTop: () => toggleTop(item.id),
@@ -469,23 +487,52 @@ export function TimeboxPlanner() {
             );
           })}
         </ol>
-        {topIds.length < 3 && otherPending.length > 0 && (
-          <div className="mt-3">
-            <p className={`text-xs mb-2 ${muted}`}>다른 날 할 일에서 고르기</p>
-            <div className="flex flex-wrap gap-2">
-              {otherPending.map((item) => {
-                const [, m, d] = item.date.split('-').map(Number);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => addOtherToTop(item)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'}`}
-                  >
-                    {item.text}<span className="ml-1 opacity-60">{m}/{d}</span>
-                  </button>
-                );
-              })}
+        {otherPending.length > 0 && (
+          <div className="mt-2">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => saveSettings({ ...settings, otherCollapsed: !otherCollapsed })}
+                aria-expanded={!otherCollapsed}
+                className={`flex items-center gap-1 min-h-11 text-xs font-medium ${muted}`}
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${otherCollapsed ? '-rotate-90' : ''}`} />
+                다른 날 할 일에서 고르기 {shownOther.length}개
+                {shownOther.length < otherPending.length && <span className="opacity-70">· 숨김 {otherPending.length - shownOther.length}</span>}
+              </button>
+              {!otherCollapsed && (
+                <button
+                  onClick={() => setEditingOther((v) => !v)}
+                  className={`text-xs font-semibold px-2.5 min-h-11 ${editingOther ? (lm ? 'text-indigo-600' : 'text-violet-400') : muted}`}
+                >
+                  {editingOther ? '완료' : '숨기기 편집'}
+                </button>
+              )}
             </div>
+            {!otherCollapsed && (
+              <>
+                <p className={`text-[11px] mb-2 ${muted}`}>
+                  {editingOther ? '누르면 숨김/표시가 바뀌어요' : topFull ? 'Top 3가 가득 찼어요. 하나를 빼면 고를 수 있어요' : '많이 고른 순'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {visibleOther.map((item) => {
+                    const [, m, d] = item.date.split('-').map(Number);
+                    const hidden = hiddenOther.includes(item.text);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => (editingOther ? toggleHiddenOther(item.text) : addOtherToTop(item))}
+                        disabled={!editingOther && topFull}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border disabled:opacity-40 ${
+                          hidden ? 'line-through opacity-40 border-dashed' : ''
+                        } ${lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'}`}
+                      >
+                        {item.text}<span className="ml-1 opacity-60">{m}/{d}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
       </Card>

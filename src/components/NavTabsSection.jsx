@@ -12,7 +12,7 @@ import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Eye, EyeOff, PanelBottom } from 'lucide-react';
+import { GripVertical, Eye, EyeOff } from 'lucide-react';
 import { useNavTabs } from '@/hooks/useNavTabs';
 import { DEFAULT_NAV_TABS, MAX_NAV_TABS, MORE_TAB_ID } from '@/lib/navTabs';
 import { NAV_ITEMS } from './navItems';
@@ -50,7 +50,8 @@ function SortableRow({ item, visible, canShow, onToggle, lm }) {
   );
 }
 
-export function NavTabsSection({ sectionCls, h3Cls, mutedCls, lm }) {
+// 섹션 틀(제목·접기)은 SettingsPanel이 그리고, 여기서는 본문만 그립니다.
+export function NavTabsSection({ mutedCls, lm }) {
   const { navTabs, saveNavTabs } = useNavTabs();
 
   const visibleIds = navTabs.filter((id) => id !== MORE_TAB_ID);
@@ -81,22 +82,18 @@ export function NavTabsSection({ sectionCls, h3Cls, mutedCls, lm }) {
   };
 
   return (
-    <section className={sectionCls(lm)}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <PanelBottom className={`w-4 h-4 ${lm ? 'text-indigo-600' : 'text-violet-400'}`} />
-          <h3 className={h3Cls(lm)}>하단 탭 구성</h3>
-        </div>
+    <>
+      <div className="flex items-start gap-2">
+        <p className={`flex-1 ${mutedCls(lm)}`}>
+          드래그로 순서를 바꾸고, 눈 아이콘으로 표시할 화면을 고르세요(최대 {MAX_NAV_TABS - 1}개). 숨긴 화면은 &apos;더보기&apos;에서 열 수 있습니다.
+        </p>
         <button
           onClick={() => saveNavTabs(DEFAULT_NAV_TABS)}
-          className={`text-xs px-2.5 py-1.5 rounded-lg ${lm ? 'bg-slate-100 text-slate-600' : 'bg-gray-800 text-gray-400'}`}
+          className={`shrink-0 text-xs px-2.5 py-1.5 rounded-lg ${lm ? 'bg-slate-100 text-slate-600' : 'bg-gray-800 text-gray-400'}`}
         >
           기본값으로
         </button>
       </div>
-      <p className={mutedCls(lm)}>
-        드래그로 순서를 바꾸고, 눈 아이콘으로 표시할 화면을 고르세요(최대 {MAX_NAV_TABS - 1}개). 숨긴 화면은 &apos;더보기&apos;에서 열 수 있습니다.
-      </p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           <ul className="space-y-2">
@@ -113,6 +110,6 @@ export function NavTabsSection({ sectionCls, h3Cls, mutedCls, lm }) {
           </ul>
         </SortableContext>
       </DndContext>
-    </section>
+    </>
   );
 }

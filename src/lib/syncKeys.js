@@ -5,17 +5,14 @@
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const SYNC_KEYS = [
-  { key: 'kang-deok-boo-todos', fallback: [] },
-  { key: 'kang-deok-boo-todo-categories', fallback: null },
   { key: 'kang-deok-boo-memos', fallback: [] },
-  { key: 'kang-deok-boo-reminders', fallback: [] },
   { key: 'kang-deok-boo-wishlist', fallback: [] },
-  { key: 'kang-deok-boo-habits', fallback: [] },
-  { key: 'kang-deok-boo-habit-checkins', fallback: {} },
   { key: 'kang-deok-boo-timebox', fallback: {} },
   { key: 'kang-deok-boo-timebox-settings', fallback: null },
   { key: 'kang-deok-boo-nav-tabs', fallback: null },
   { key: 'kang-deok-boo-home-layout', fallback: null },
+  { key: 'kang-deok-boo-settings-layout', fallback: null },
+  { key: 'kang-deok-boo-workouts', fallback: null },
   { key: 'et_expenses', fallback: [] },
   { key: 'et_budget', fallback: 500000 },
   { key: 'et_payment_methods', fallback: null },
