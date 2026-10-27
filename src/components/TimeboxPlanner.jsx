@@ -3,7 +3,8 @@
 // components/TimeboxPlanner.jsx
 // '타임박스' 탭. 널리 쓰이는 타임박스 플래너 양식(브레인 덤프 → Top 3 →
 // 30분 단위 시간표 → 회고)을 따릅니다.
-//  1) 브레인 덤프: 오늘 떠오르는 할 일을 모두 적습니다.
+//  1) 브레인 덤프: 오늘 떠오르는 할 일을 모두 적습니다. 자주·매일 하는 일은
+//     즐겨찾기에 등록해 두고 팝업에서 골라 넣습니다.
 //  2) Top 3: 그중 오늘 반드시 끝낼 세 가지를 ⭐로 고릅니다.
 //  3) 타임박스: Top 3부터 30분 칸에 배치하고, 남는 칸에 나머지를 채웁니다.
 //  4) 회고 + 끝내지 못한 항목은 다음 날로 넘깁니다.
@@ -18,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Star, Trash2, Check, Settings2, ArrowRightToLine, Brain, Target, Clock,
-  NotebookPen, GripVertical,
+  NotebookPen, GripVertical, Bookmark, X,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useTimebox, slotKeys, currentSlotKey, toggleBlockDone } from '@/hooks/useTimebox';
@@ -103,7 +104,7 @@ function CheckBox({ done, onClick, lm, className = 'min-w-11 min-h-11 -ml-2', bo
   );
 }
 
-function DumpItem({ item, isTop, topFull, lm, muted, onToggle, onTop, onDelete, dragHandle }) {
+function DumpItem({ item, isTop, topFull, isFav, lm, muted, onToggle, onTop, onFav, onDelete, dragHandle }) {
   return (
     <>
       {dragHandle}
@@ -117,6 +118,13 @@ function DumpItem({ item, isTop, topFull, lm, muted, onToggle, onTop, onDelete, 
         disabled={!isTop && topFull}
         className="disabled:opacity-30"
         onClick={onTop}
+      />
+      <IconButton
+        icon={Bookmark}
+        label={isFav ? '즐겨찾기에서 빼기' : '즐겨찾기에 추가'}
+        tone={isFav ? 'active' : 'default'}
+        filled={isFav}
+        onClick={onFav}
       />
       <IconButton icon={Trash2} label="삭제" tone="danger" onClick={onDelete} />
     </>
@@ -150,7 +158,7 @@ function SortableDumpItem({ lm, ...props }) {
   );
 }
 
-function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClose, onSave, onClear }) {
+function SlotEditor({ open, slot, day, slots, favorites, pickCount, lm, onClose, onSave, onClear }) {
   const block = day.blocks[slot] || {};
   const [text, setText] = useState('');
   const [itemId, setItemId] = useState(null);
@@ -171,13 +179,17 @@ function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClo
   const topIds = day.top3.filter(Boolean);
   const picks = (item) => pickCount.get(item.text) || 0;
   const sorted = [...pending].sort((a, b) => topIds.includes(b.id) - topIds.includes(a.id) || picks(b) - picks(a));
+  const pendingTexts = new Set(pending.map((i) => i.text));
+  const favs = favorites.filter((t) => !pendingTexts.has(t));
 
-  const chip = (item, suffix) => {
-    const sel = itemId === item.id;
+  // 즐겨찾기 칩은 브레인 덤프 항목이 아니므로 id 없이 텍스트만 넣습니다.
+  const chip = (item) => {
+    const id = item.id ?? null;
+    const sel = itemId === id && text === item.text;
     return (
       <button
-        key={item.id}
-        onClick={() => { setItemId(item.id); setText(item.text); }}
+        key={item.id ?? item.text}
+        onClick={() => { setItemId(id); setText(item.text); }}
         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
           sel
             ? lm ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-violet-600 border-violet-600 text-white'
@@ -185,7 +197,6 @@ function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClo
         }`}
       >
         {topIds.includes(item.id) && '⭐ '}{item.text}
-        {suffix && <span className="ml-1 opacity-60">{suffix}</span>}
       </button>
     );
   };
@@ -199,15 +210,10 @@ function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClo
             <div className="flex flex-wrap gap-2">{sorted.map((item) => chip(item))}</div>
           </div>
         )}
-        {otherPending.length > 0 && (
+        {favs.length > 0 && (
           <div>
-            <p className={`text-xs mb-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>다른 날 할 일</p>
-            <div className="flex flex-wrap gap-2">
-              {otherPending.map((item) => {
-                const [, m, d] = item.date.split('-').map(Number);
-                return chip(item, `${m}/${d}`);
-              })}
-            </div>
+            <p className={`text-xs mb-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>즐겨찾기</p>
+            <div className="flex flex-wrap gap-2">{favs.map((t) => chip({ text: t }))}</div>
           </div>
         )}
         <input
@@ -251,6 +257,70 @@ function SlotEditor({ open, slot, day, slots, otherPending, pickCount, lm, onClo
   );
 }
 
+// 자주·매일 하는 할 일 목록 팝업. 누르면 이 날 브레인 덤프에 추가됩니다.
+function FavoritesSheet({ open, favorites, addedTexts, lm, onClose, onPick, onAdd, onRemove }) {
+  const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => { if (!open) setEditing(false); }, [open]);
+
+  const muted = lm ? 'text-slate-400' : 'text-gray-500';
+  const add = () => {
+    const text = draft.trim();
+    if (!text) return;
+    onAdd(text);
+    setDraft('');
+  };
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="즐겨찾기">
+      <div className="p-5 space-y-3">
+        <div className="flex gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) add(); }}
+            placeholder="자주 하는 일·매일 루틴 등록"
+            className={`flex-1 min-w-0 px-3 py-2.5 rounded-xl border text-sm outline-none ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900' : 'bg-gray-800 border-gray-700 focus:border-violet-500 text-white'}`}
+          />
+          <IconButton icon={Plus} label="즐겨찾기 등록" onClick={add} />
+        </div>
+        {favorites.length === 0 ? (
+          <p className={`text-xs text-center py-3 ${muted}`}>등록해 두면 매일 적지 않고 골라 넣을 수 있어요</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <p className={`text-[11px] ${muted}`}>{editing ? '누르면 즐겨찾기에서 빠져요' : '누르면 브레인 덤프에 추가돼요'}</p>
+              <button
+                onClick={() => setEditing((v) => !v)}
+                className={`text-xs font-semibold px-2.5 min-h-11 ${editing ? (lm ? 'text-indigo-600' : 'text-violet-400') : muted}`}
+              >
+                {editing ? '완료' : '편집'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {favorites.map((text) => {
+                const added = addedTexts.has(text);
+                return (
+                  <button
+                    key={text}
+                    onClick={() => (editing ? onRemove(text) : onPick(text))}
+                    disabled={!editing && added}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border disabled:opacity-40 ${lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'}`}
+                  >
+                    {editing ? <X className="w-3 h-3" /> : added && <Check className="w-3 h-3" />}
+                    {text}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </BottomSheet>
+  );
+}
+
 export function TimeboxPlanner() {
   const { theme } = useTheme();
   const lm = theme === 'light';
@@ -264,7 +334,7 @@ export function TimeboxPlanner() {
   const [reflection, setReflection] = useState('');
   const [nowSlot, setNowSlot] = useState(currentSlotKey());
   const [showDone, setShowDone] = useState(false);
-  const [editingOther, setEditingOther] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -279,24 +349,6 @@ export function TimeboxPlanner() {
   const isToday = date === today;
 
   const pickCount = useMemo(() => countPicks(days), [days]);
-
-  // 다른 날짜의 미완료 브레인 덤프 항목(같은 텍스트는 최신 날짜 것 하나만). 많이 고른 순 → 최신 날짜 순.
-  const otherPending = useMemo(() => {
-    const seen = new Set(day.brainDump.map((i) => i.text));
-    const items = [];
-    Object.keys(days)
-      .filter((d) => d !== date)
-      .sort()
-      .reverse()
-      .forEach((d) => {
-        (days[d].brainDump || []).forEach((i) => {
-          if (i.done || seen.has(i.text)) return;
-          seen.add(i.text);
-          items.push({ ...i, date: d });
-        });
-      });
-    return items.sort((a, b) => (pickCount.get(b.text) || 0) - (pickCount.get(a.text) || 0));
-  }, [days, date, day.brainDump, pickCount]);
 
   useEffect(() => { setReflection(day.reflection || ''); }, [date, day.reflection]);
 
@@ -340,24 +392,20 @@ export function TimeboxPlanner() {
       return { ...d, top3 };
     });
 
-  // 다른 날 할 일을 이 날 브레인 덤프로 복사하고 Top 3 빈칸에 지정합니다(원래 날 기록은 그대로).
-  const addOtherToTop = (item) =>
-    updateDay(date, (d) => {
-      const empty = d.top3.indexOf(null);
-      if (empty === -1) return d;
-      const copy = { id: newId(), text: item.text, done: false };
-      const top3 = [...d.top3];
-      top3[empty] = copy.id;
-      return { ...d, brainDump: [...d.brainDump, copy], top3 };
-    });
+  // 즐겨찾기(자주·매일 하는 할 일 텍스트)는 타임박스 설정에 함께 저장합니다(기기 간 동기화).
+  const favorites = settings.favorites || [];
+  const setFavorite = (text, on) => {
+    const rest = favorites.filter((t) => t !== text);
+    saveSettings({ ...settings, favorites: on ? [...rest, text] : rest });
+  };
 
-  // '다른 날 할 일' 목록의 숨김·접힘 상태는 타임박스 설정에 함께 저장합니다(기기 간 동기화).
-  const hiddenOther = settings.hiddenOther || [];
-  const toggleHiddenOther = (text) =>
-    saveSettings({
-      ...settings,
-      hiddenOther: hiddenOther.includes(text) ? hiddenOther.filter((t) => t !== text) : [...hiddenOther, text],
-    });
+  // 즐겨찾기를 이 날 브레인 덤프에 추가합니다(같은 텍스트가 이미 있으면 건너뜀).
+  const addFavoriteToDump = (text) =>
+    updateDay(date, (d) =>
+      d.brainDump.some((i) => i.text === text)
+        ? d
+        : { ...d, brainDump: [...d.brainDump, { id: newId(), text, done: false }] }
+    );
 
   const saveSlots = (keys, block) => {
     updateDay(date, (d) => {
@@ -410,16 +458,15 @@ export function TimeboxPlanner() {
   const doneItems = day.brainDump.filter((i) => i.done);
   const pendingCount = pendingItems.length;
   const topFull = topIds.length >= 3;
-  const otherCollapsed = settings.otherCollapsed;
-  const shownOther = otherPending.filter((i) => !hiddenOther.includes(i.text));
-  const visibleOther = editingOther ? otherPending : shownOther;
   const dumpItemProps = (item) => ({
     item,
     isTop: topIds.includes(item.id),
     topFull,
+    isFav: favorites.includes(item.text),
     muted,
     onToggle: () => toggleItem(item.id),
     onTop: () => toggleTop(item.id),
+    onFav: () => setFavorite(item.text, !favorites.includes(item.text)),
     onDelete: () => deleteItem(item.id),
   });
 
@@ -487,59 +534,25 @@ export function TimeboxPlanner() {
             );
           })}
         </ol>
-        {otherPending.length > 0 && (
-          <div className="mt-2">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => saveSettings({ ...settings, otherCollapsed: !otherCollapsed })}
-                aria-expanded={!otherCollapsed}
-                className={`flex items-center gap-1 min-h-11 text-xs font-medium ${muted}`}
-              >
-                <ChevronDown className={`w-4 h-4 transition-transform ${otherCollapsed ? '-rotate-90' : ''}`} />
-                다른 날 할 일에서 고르기 {shownOther.length}개
-                {shownOther.length < otherPending.length && <span className="opacity-70">· 숨김 {otherPending.length - shownOther.length}</span>}
-              </button>
-              {!otherCollapsed && (
-                <button
-                  onClick={() => setEditingOther((v) => !v)}
-                  className={`text-xs font-semibold px-2.5 min-h-11 ${editingOther ? (lm ? 'text-indigo-600' : 'text-violet-400') : muted}`}
-                >
-                  {editingOther ? '완료' : '숨기기 편집'}
-                </button>
-              )}
-            </div>
-            {!otherCollapsed && (
-              <>
-                <p className={`text-[11px] mb-2 ${muted}`}>
-                  {editingOther ? '누르면 숨김/표시가 바뀌어요' : topFull ? 'Top 3가 가득 찼어요. 하나를 빼면 고를 수 있어요' : '많이 고른 순'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {visibleOther.map((item) => {
-                    const [, m, d] = item.date.split('-').map(Number);
-                    const hidden = hiddenOther.includes(item.text);
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => (editingOther ? toggleHiddenOther(item.text) : addOtherToTop(item))}
-                        disabled={!editingOther && topFull}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border disabled:opacity-40 ${
-                          hidden ? 'line-through opacity-40 border-dashed' : ''
-                        } ${lm ? 'border-slate-200 text-slate-600' : 'border-gray-700 text-gray-300'}`}
-                      >
-                        {item.text}<span className="ml-1 opacity-60">{m}/{d}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </Card>
 
       {/* 브레인 덤프 */}
       <Card>
-        <SectionTitle icon={Brain} lm={lm}>브레인 덤프</SectionTitle>
+        <SectionTitle
+          icon={Brain}
+          lm={lm}
+          right={
+            <button
+              onClick={() => setShowFavorites(true)}
+              className={`flex items-center gap-1 -my-2 px-2.5 min-h-11 text-xs font-semibold ${lm ? 'text-indigo-600' : 'text-violet-400'}`}
+            >
+              <Bookmark className="w-3.5 h-3.5" />
+              즐겨찾기에서 추가
+            </button>
+          }
+        >
+          브레인 덤프
+        </SectionTitle>
         <div className="flex gap-2 mb-3">
           <input
             value={draft}
@@ -663,12 +676,23 @@ export function TimeboxPlanner() {
         slot={editingSlot}
         day={day}
         slots={slots}
-        otherPending={otherPending}
+        favorites={favorites}
         pickCount={pickCount}
         lm={lm}
         onClose={() => setEditingSlot(null)}
         onSave={saveSlots}
         onClear={() => clearSlot(editingSlot)}
+      />
+
+      <FavoritesSheet
+        open={showFavorites}
+        favorites={favorites}
+        addedTexts={new Set(day.brainDump.map((i) => i.text))}
+        lm={lm}
+        onClose={() => setShowFavorites(false)}
+        onPick={addFavoriteToDump}
+        onAdd={(text) => setFavorite(text, true)}
+        onRemove={(text) => setFavorite(text, false)}
       />
     </div>
   );
