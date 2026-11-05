@@ -8,6 +8,8 @@
 //  2) Top 3: 그중 오늘 반드시 끝낼 세 가지를 ⭐로 고릅니다.
 //  3) 타임박스: Top 3부터 30분 칸에 배치하고, 남는 칸에 나머지를 채웁니다.
 //  4) 회고 + 끝내지 못한 항목은 다음 날로 넘깁니다.
+// 일정(날짜·시간이 정해진 일, 미래 날짜 할 일)은 그날의 브레인 덤프와 칸으로 바로
+// 넣고, 루틴(요일 반복)은 해당 요일에 자동으로 펼쳐집니다. 월간 캘린더로 날짜를 오갑니다.
 // ──────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -19,10 +21,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Star, Trash2, Check, Settings2, ArrowRightToLine, Brain, Target, Clock,
-  NotebookPen, GripVertical, Bookmark, X,
+  NotebookPen, GripVertical, Bookmark, X, CalendarDays, CalendarPlus, Repeat, Pencil,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { useTimebox, slotKeys, currentSlotKey, toggleBlockDone } from '@/hooks/useTimebox';
+import { useTimebox, slotKeys, currentSlotKey, toggleBlockDone, isRoutineItem } from '@/hooks/useTimebox';
 import { Card } from './ui/Card';
 import { BottomSheet } from './ui/BottomSheet';
 import { Button } from './ui/Button';
@@ -40,11 +42,27 @@ function shiftDate(dateStr, days) {
   return toDateStr(new Date(y, m - 1, d + days));
 }
 
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]; // 월요일부터 표시
+
 function dateLabel(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
+  const dow = DOW[new Date(y, m - 1, d).getDay()];
   return `${m}월 ${d}일 (${dow})`;
 }
+
+function weekdaysLabel(weekdays) {
+  if (weekdays.length === 7) return '매일';
+  const key = [...weekdays].sort().join();
+  if (key === '1,2,3,4,5') return '평일';
+  if (key === '0,6') return '주말';
+  return WEEK_ORDER.filter((d) => weekdays.includes(d)).map((d) => DOW[d]).join('·');
+}
+
+const lengthLabel = (n) => (n >= 2 ? `${n / 2}시간` : '30분');
+
+const fieldCls = (lm) =>
+  `w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${lm ? 'bg-white border-slate-200 focus:border-indigo-400 text-slate-900' : 'bg-gray-800 border-gray-700 focus:border-violet-500 text-white'}`;
 
 const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
@@ -109,6 +127,10 @@ function DumpItem({ item, isTop, topFull, isFav, lm, muted, onToggle, onTop, onF
     <>
       {dragHandle}
       <CheckBox done={item.done} onClick={onToggle} lm={lm} className={`min-w-11 min-h-11 ${dragHandle ? '-mx-1' : '-ml-2'}`} />
+      {item.time && (
+        <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${lm ? 'text-indigo-500' : 'text-violet-400'}`}>{item.time}</span>
+      )}
+      {isRoutineItem(item) && <Repeat className={`w-3 h-3 shrink-0 ${muted}`} aria-label="루틴" />}
       <span className={`flex-1 text-sm truncate ${item.done ? `line-through ${muted}` : lm ? 'text-slate-700' : 'text-gray-200'}`}>{item.text}</span>
       <IconButton
         icon={Star}
@@ -321,6 +343,241 @@ function FavoritesSheet({ open, favorites, addedTexts, lm, onClose, onPick, onAd
   );
 }
 
+// 시간(30분 단위, 선택)과 길이. 일정·루틴 시트가 함께 씁니다.
+function TimeFields({ slots, time, length, lm, onTime, onLength }) {
+  const muted = lm ? 'text-slate-400' : 'text-gray-500';
+  const maxLen = time ? slots.length - slots.indexOf(time) : 0;
+  return (
+    <>
+      <div>
+        <p className={`text-xs mb-2 ${muted}`}>시간</p>
+        <select value={time} onChange={(e) => onTime(e.target.value)} className={fieldCls(lm)}>
+          <option value="">시간 없음 (그날 할 일로만)</option>
+          {slots.map((k) => <option key={k} value={k}>{k}</option>)}
+        </select>
+      </div>
+      {time && (
+        <div>
+          <p className={`text-xs mb-2 ${muted}`}>길이</p>
+          <div className="flex gap-2">
+            {DURATIONS.filter((n) => n <= maxLen).map((n) => (
+              <button
+                key={n}
+                onClick={() => onLength(n)}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold border ${
+                  length === n
+                    ? lm ? 'bg-indigo-50 border-indigo-400 text-indigo-600' : 'bg-gray-800 border-violet-500 text-violet-400'
+                    : lm ? 'border-slate-200 text-slate-500' : 'border-gray-700 text-gray-400'
+                }`}
+              >
+                {lengthLabel(n)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// 일정 추가: 고른 날짜의 브레인 덤프에 넣고, 시간이 있으면 그 칸들도 채웁니다.
+function EventSheet({ open, defaultDate, slots, getDay, lm, onClose, onSave }) {
+  const [text, setText] = useState('');
+  const [date, setDate] = useState(defaultDate);
+  const [time, setTime] = useState('');
+  const [length, setLength] = useState(2);
+
+  useEffect(() => {
+    if (!open) return;
+    setText('');
+    setDate(defaultDate);
+    setTime('');
+    setLength(2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const start = slots.indexOf(time);
+  const keys = time ? slots.slice(start, start + Math.min(length, slots.length - start)) : [];
+  const busy = date && keys.some((k) => getDay(date).blocks[k]);
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="일정 추가">
+      <div className="p-5 space-y-4">
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="예: 치과, 보고서 제출" className={fieldCls(lm)} />
+        <div>
+          <p className={`text-xs mb-2 ${lm ? 'text-slate-400' : 'text-gray-500'}`}>날짜</p>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls(lm)} />
+        </div>
+        <TimeFields slots={slots} time={time} length={length} lm={lm} onTime={setTime} onLength={setLength} />
+        {busy && <p className="text-xs text-rose-500">이 시간에 이미 채워진 칸이 있어요. 시간을 바꾸거나 칸을 먼저 비워 주세요.</p>}
+        <Button
+          className="w-full"
+          disabled={!text.trim() || !date || busy}
+          onClick={() => onSave({ text: text.trim(), date, time: time || null, keys })}
+        >
+          추가
+        </Button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// 루틴: 요일마다 반복되는 할 일. 해당 요일 브레인 덤프(+시간이 있으면 칸)에 자동으로 들어갑니다.
+function RoutinesSheet({ open, routines, slots, today, lm, onClose, onSave }) {
+  const empty = { text: '', weekdays: [0, 1, 2, 3, 4, 5, 6], time: '', length: 1 };
+  const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState(null);
+
+  const reset = () => { setForm(empty); setEditingId(null); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) reset(); }, [open]);
+
+  const muted = lm ? 'text-slate-400' : 'text-gray-500';
+  const toggleDay = (d) =>
+    setForm((f) => ({ ...f, weekdays: f.weekdays.includes(d) ? f.weekdays.filter((x) => x !== d) : [...f.weekdays, d] }));
+
+  const submit = () => {
+    const data = { text: form.text.trim(), weekdays: form.weekdays, time: form.time || null, length: form.length };
+    onSave(
+      editingId
+        ? routines.map((r) => (r.id === editingId ? { ...r, ...data } : r))
+        : [...routines, { id: newId(), startDate: today, ...data }]
+    );
+    reset();
+  };
+
+  const edit = (r) => {
+    setEditingId(r.id);
+    setForm({ text: r.text, weekdays: r.weekdays, time: r.time || '', length: r.length });
+  };
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="루틴">
+      <div className="p-5 space-y-4">
+        <input
+          value={form.text}
+          onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
+          placeholder="예: 아침 운동, 영양제 먹기"
+          className={fieldCls(lm)}
+        />
+        <div>
+          <p className={`text-xs mb-2 ${muted}`}>반복 요일</p>
+          <div className="flex gap-1.5">
+            {WEEK_ORDER.map((d) => {
+              const on = form.weekdays.includes(d);
+              return (
+                <button
+                  key={d}
+                  onClick={() => toggleDay(d)}
+                  aria-pressed={on}
+                  className={`flex-1 min-h-11 rounded-xl text-xs font-bold border ${
+                    on
+                      ? lm ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-violet-600 border-violet-600 text-white'
+                      : lm ? 'border-slate-200 text-slate-500' : 'border-gray-700 text-gray-400'
+                  }`}
+                >
+                  {DOW[d]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <TimeFields
+          slots={slots}
+          time={form.time}
+          length={form.length}
+          lm={lm}
+          onTime={(time) => setForm((f) => ({ ...f, time, length: 1 }))}
+          onLength={(length) => setForm((f) => ({ ...f, length }))}
+        />
+        <div className="flex gap-2">
+          {editingId && <Button variant="secondary" className="flex-1" onClick={reset}>취소</Button>}
+          <Button className="flex-1" disabled={!form.text.trim() || form.weekdays.length === 0} onClick={submit}>
+            {editingId ? '수정' : '루틴 추가'}
+          </Button>
+        </div>
+        {routines.length > 0 && (
+          <ul className={`border-t pt-2 ${lm ? 'border-slate-100' : 'border-gray-800'}`}>
+            {routines.map((r) => (
+              <li key={r.id} className="flex items-center gap-2">
+                <Repeat className={`w-4 h-4 shrink-0 ${muted}`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm truncate ${lm ? 'text-slate-700' : 'text-gray-200'}`}>{r.text}</p>
+                  <p className={`text-[11px] ${muted}`}>
+                    {weekdaysLabel(r.weekdays)}{r.time && ` · ${r.time} (${lengthLabel(r.length)})`}
+                  </p>
+                </div>
+                <IconButton icon={Pencil} label="수정" onClick={() => edit(r)} />
+                <IconButton icon={Trash2} label="삭제" tone="danger" onClick={() => onSave(routines.filter((x) => x.id !== r.id))} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className={`text-[11px] ${muted}`}>바꾼 내용은 아직 손대지 않은 날부터 반영돼요.</p>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// 월간 캘린더: 날짜마다 남은 할 일·일정 수를 보여 주고, 누르면 그날로 이동합니다.
+// 루틴 항목은 매일 있어 점이 의미 없으므로 세지 않습니다.
+function MonthSheet({ open, date, today, days, lm, onClose, onPick }) {
+  const [month, setMonth] = useState(date.slice(0, 7));
+  useEffect(() => { if (open) setMonth(date.slice(0, 7)); }, [open, date]);
+
+  const [y, m] = month.split('-').map(Number);
+  const startDow = new Date(y, m - 1, 1).getDay();
+  const lastDay = new Date(y, m, 0).getDate();
+  const shiftMonth = (n) => setMonth(toDateStr(new Date(y, m - 1 + n, 1)).slice(0, 7));
+  const muted = lm ? 'text-slate-400' : 'text-gray-500';
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="캘린더">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <IconButton icon={ChevronLeft} label="이전 달" onClick={() => shiftMonth(-1)} />
+          <p className={`text-sm font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{y}년 {m}월</p>
+          <IconButton icon={ChevronRight} label="다음 달" onClick={() => shiftMonth(1)} />
+        </div>
+        <div className={`grid grid-cols-7 text-center text-[11px] font-bold mb-1 ${muted}`}>
+          {DOW.map((d) => <span key={d}>{d}</span>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: startDow }, (_, i) => <span key={`b${i}`} />)}
+          {Array.from({ length: lastDay }, (_, i) => {
+            const ds = `${month}-${String(i + 1).padStart(2, '0')}`;
+            const items = (days[ds]?.brainDump || []).filter((it) => !isRoutineItem(it));
+            const left = items.filter((it) => !it.done).length;
+            const hasTimed = items.some((it) => it.time && !it.done);
+            const selected = ds === date;
+            return (
+              <button
+                key={ds}
+                onClick={() => onPick(ds)}
+                className={`flex flex-col items-center justify-start pt-1.5 h-12 rounded-xl text-sm ${
+                  selected
+                    ? lm ? 'bg-indigo-600 text-white' : 'bg-violet-600 text-white'
+                    : ds === today
+                      ? lm ? 'bg-indigo-50 text-indigo-700 font-bold' : 'bg-gray-800 text-violet-300 font-bold'
+                      : lm ? 'text-slate-700 hover:bg-slate-50' : 'text-gray-200 hover:bg-gray-800/50'
+                }`}
+              >
+                {i + 1}
+                {left > 0 && (
+                  <span className={`mt-0.5 text-[10px] font-bold leading-none ${selected ? 'text-white/90' : hasTimed ? 'text-amber-500' : muted}`}>
+                    {hasTimed ? '●' : '·'}{left}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className={`text-[11px] mt-3 ${muted}`}>숫자는 남은 할 일 수, <span className="text-amber-500">●</span>은 시간이 정해진 일정이 있는 날이에요.</p>
+      </div>
+    </BottomSheet>
+  );
+}
+
 export function TimeboxPlanner() {
   const { theme } = useTheme();
   const lm = theme === 'light';
@@ -335,6 +592,9 @@ export function TimeboxPlanner() {
   const [nowSlot, setNowSlot] = useState(currentSlotKey());
   const [showDone, setShowDone] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showEvent, setShowEvent] = useState(false);
+  const [showRoutines, setShowRoutines] = useState(false);
+  const [showMonth, setShowMonth] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -407,6 +667,21 @@ export function TimeboxPlanner() {
         : { ...d, brainDump: [...d.brainDump, { id: newId(), text, done: false }] }
     );
 
+  const routines = settings.routines || [];
+  const saveRoutines = (next) => saveSettings({ ...settings, routines: next });
+
+  // 일정은 그날 브레인 덤프 항목으로 넣고, 시간이 있으면 칸에도 배치한 뒤 그날로 이동합니다.
+  const addEvent = ({ text, date: target, time, keys }) => {
+    const id = newId();
+    updateDay(target, (d) => {
+      const blocks = { ...d.blocks };
+      keys.forEach((k) => { blocks[k] = { text, itemId: id, done: false }; });
+      return { ...d, brainDump: [...d.brainDump, { id, text, done: false, ...(time && { time }) }], blocks };
+    });
+    setShowEvent(false);
+    setDate(target);
+  };
+
   const saveSlots = (keys, block) => {
     updateDay(date, (d) => {
       const blocks = { ...d.blocks };
@@ -429,8 +704,9 @@ export function TimeboxPlanner() {
 
   // 끝내지 못한 브레인 덤프 항목을 다음 날로 복사합니다(Top 3 지정도 유지).
   // 오늘 기록은 그대로 남기고, 다음 날에 같은 내용이 이미 있으면 건너뜁니다.
+  // 루틴 항목은 다음 날 루틴이 따로 생기므로 넘기지 않습니다.
   const carryOver = () => {
-    const pending = day.brainDump.filter((i) => !i.done);
+    const pending = day.brainDump.filter((i) => !i.done && !isRoutineItem(i));
     if (pending.length === 0) return;
     const nextDate = shiftDate(date, 1);
     updateDay(nextDate, (next) => {
@@ -456,7 +732,7 @@ export function TimeboxPlanner() {
   for (let i = 0; i < slots.length; i += 2) hours.push([slots[i], slots[i + 1]]);
   const pendingItems = day.brainDump.filter((i) => !i.done);
   const doneItems = day.brainDump.filter((i) => i.done);
-  const pendingCount = pendingItems.length;
+  const pendingCount = pendingItems.filter((i) => !isRoutineItem(i)).length;
   const topFull = topIds.length >= 3;
   const dumpItemProps = (item) => ({
     item,
@@ -474,7 +750,10 @@ export function TimeboxPlanner() {
     <div className="max-w-3xl mx-auto w-full px-4 py-4 space-y-3">
       {/* 날짜 */}
       <div className="flex items-center justify-between">
-        <IconButton icon={ChevronLeft} label="이전 날" onClick={() => setDate(shiftDate(date, -1))} />
+        <div className="flex">
+          <IconButton icon={ChevronLeft} label="이전 날" onClick={() => setDate(shiftDate(date, -1))} />
+          <IconButton icon={CalendarDays} label="캘린더" onClick={() => setShowMonth(true)} />
+        </div>
         <button onClick={() => setDate(today)} className="text-center">
           <p className={`text-base font-bold ${lm ? 'text-slate-800' : 'text-white'}`}>{dateLabel(date)}</p>
           {!isToday && <p className={`text-[11px] ${lm ? 'text-indigo-500' : 'text-violet-400'}`}>오늘로 이동</p>}
@@ -542,13 +821,18 @@ export function TimeboxPlanner() {
           icon={Brain}
           lm={lm}
           right={
-            <button
-              onClick={() => setShowFavorites(true)}
-              className={`flex items-center gap-1 -my-2 px-2.5 min-h-11 text-xs font-semibold ${lm ? 'text-indigo-600' : 'text-violet-400'}`}
-            >
-              <Bookmark className="w-3.5 h-3.5" />
-              즐겨찾기에서 추가
-            </button>
+            <div className={`flex -my-2 -mr-1.5 text-xs font-semibold ${lm ? 'text-indigo-600' : 'text-violet-400'}`}>
+              {[
+                { icon: Bookmark, label: '즐겨찾기', onClick: () => setShowFavorites(true) },
+                { icon: CalendarPlus, label: '일정', onClick: () => setShowEvent(true) },
+                { icon: Repeat, label: '루틴', onClick: () => setShowRoutines(true) },
+              ].map(({ icon: Icon, label, onClick }) => (
+                <button key={label} onClick={onClick} className="flex items-center gap-1 px-1.5 min-h-11">
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
           }
         >
           브레인 덤프
@@ -693,6 +977,36 @@ export function TimeboxPlanner() {
         onPick={addFavoriteToDump}
         onAdd={(text) => setFavorite(text, true)}
         onRemove={(text) => setFavorite(text, false)}
+      />
+
+      <EventSheet
+        open={showEvent}
+        defaultDate={date}
+        slots={slots}
+        getDay={getDay}
+        lm={lm}
+        onClose={() => setShowEvent(false)}
+        onSave={addEvent}
+      />
+
+      <RoutinesSheet
+        open={showRoutines}
+        routines={routines}
+        slots={slots}
+        today={today}
+        lm={lm}
+        onClose={() => setShowRoutines(false)}
+        onSave={saveRoutines}
+      />
+
+      <MonthSheet
+        open={showMonth}
+        date={date}
+        today={today}
+        days={days}
+        lm={lm}
+        onClose={() => setShowMonth(false)}
+        onPick={(d) => { setDate(d); setShowMonth(false); }}
       />
     </div>
   );
