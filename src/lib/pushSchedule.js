@@ -7,7 +7,7 @@
 //   ② 미완료 반복: 칸이 끝날 때까지 repeatMinutes분마다(완료 체크 시 중단)
 //   ③ 정기 체크인: 표시 시간 범위 안에서 checkinMinutes분마다
 // ──────────────────────────────────────────────────────────────────────────────
-import { slotKeys } from '@/hooks/useTimebox';
+import { slotKeys, applyRoutines, EMPTY_DAY } from '@/hooks/useTimebox';
 
 // blockLead: null이면 칸 시작 알림 끔, 0이면 정시
 export const DEFAULT_NOTIFY = { blockLead: 0, repeatMinutes: 0, checkinMinutes: 0 };
@@ -45,7 +45,8 @@ export function buildSchedule(days, settings, now = Date.now()) {
 
   for (let t = new Date(now); toDateStr(t) <= toDateStr(new Date(end)); t.setDate(t.getDate() + 1)) {
     const date = toDateStr(t);
-    const day = days[date] || {};
+    // 아직 열어 보지 않은 날의 루틴도 알림에 포함합니다.
+    const day = applyRoutines({ ...EMPTY_DAY, ...days[date] }, date, settings.routines, settings);
     const blocks = day.blocks || {};
     // 그날 0시 기준 분 → 시각(ms)
     const at = (minOfDay) => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 0, minOfDay).getTime();
